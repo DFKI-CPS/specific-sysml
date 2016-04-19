@@ -31,6 +31,15 @@ trait SysMLTokens { self: Tokens =>
   case class UNMATCHED_DEDENT(indentation: Indentation) extends IndentationToken {
     override def toString = s"unmatched dedentation (no previous line was indented with $indentation)"
   }
+  case class INCONSISTENT_INDENTATION(before: Indentation, now: Indentation) extends IndentationToken {
+    override def toString = s"inconsistent indentation (started with $before and continued with $now)"
+  }
+  case class MIXED_INDENTATION(start: Indentation) extends IndentationToken {
+    override def toString = start match {
+      case Indentation.Spaces(n) => s"mixed indentation characters in one line (tab afer $n spaces)"
+      case Indentation.Tabs(n) => s"mixed indentation characters in one line (space afer $n tabs)"
+    }
+  }
 
   case class Name(chars: String) extends Token {
     override def toString = s""""$chars""""

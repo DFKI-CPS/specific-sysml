@@ -25,8 +25,8 @@ class IndentScanner(private var input: Reader[Lexer.Token], indentStack: List[Le
         else if (n > n2) (Lexer.INDENT,new IndentScanner(input.rest, s::indentStack),input.rest.pos)
         else if (indentStack.contains(s)) (Lexer.DEDENT,new IndentScanner(input,is),input.rest.pos)
         else (Lexer.UNMATCHED_DEDENT(s),new IndentScanner(input.rest,indentStack),input.rest.pos)
-      case Lexer.Indentation.Tabs(n2) :: is =>
-        (Lexer.ErrorToken(s"opened indentation with $n spaces but continued with $n2 tabs"))
+      case (b@Lexer.Indentation.Tabs(n2)) :: is =>
+        (Lexer.INCONSISTENT_INDENTATION(b, s),new IndentScanner(input.rest,indentStack),input.rest.pos)
     }
     case s@Lexer.Indentation.Tabs(n) => indentStack match {
       case Nil => (Lexer.INDENT,new IndentScanner(input.rest, s::Nil),input.pos)
@@ -35,8 +35,8 @@ class IndentScanner(private var input: Reader[Lexer.Token], indentStack: List[Le
         else if (n > n2) (Lexer.INDENT,new IndentScanner(input.rest, s::indentStack),input.pos)
         else if (indentStack.contains(s)) (Lexer.DEDENT,new IndentScanner(input,is),input.pos)
         else (Lexer.UNMATCHED_DEDENT(s),new IndentScanner(input.rest,indentStack),input.rest.pos)
-      case Lexer.Indentation.Spaces(n2) :: is =>
-        (Lexer.ErrorToken(s"opened indentation with $n spaces but continued with $n2 tabs"))
+      case (b@Lexer.Indentation.Spaces(n2)) :: is =>
+        (Lexer.INCONSISTENT_INDENTATION(b, s),new IndentScanner(input.rest,indentStack),input.rest.pos)
     }
     case other => (other,new IndentScanner(input.rest,indentStack),input.pos)
   }

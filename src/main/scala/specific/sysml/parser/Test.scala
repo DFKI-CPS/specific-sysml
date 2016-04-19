@@ -8,7 +8,8 @@ import scala.util.parsing.input.{CharSequenceReader, Reader}
 object Test extends App {
   val input2 =
     "block Test\n" +
-    "\t\t  invalid indentation"
+    "\t\treferences\n"+
+    "  operations"
 
   val input3 =
     """
@@ -123,12 +124,7 @@ object Test extends App {
       |context Door::off_red():
       |  post off_red_post: self.red = false
       |}""".stripMargin
-  var tokens: Reader[Lexer.Token] = new IndentScanner(new Lexer.Scanner(input3))
-
-  while (!tokens.atEnd) {
-    println(tokens.first)
-    tokens = tokens.rest
-  }
+  var tokens: Reader[Lexer.Token] = new IndentScanner(new Lexer.Scanner(input2))
 
   Parser.phrase(Parser.content)(tokens) match {
     case Parser.Success(b,_) => println(b)
