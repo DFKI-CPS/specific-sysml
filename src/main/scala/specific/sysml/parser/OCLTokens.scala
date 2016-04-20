@@ -45,10 +45,11 @@ trait OCLTokens extends TokensBase { self: Tokens =>
   val oclDelimiters = Set(
     PLUS,MINUS,STAR,SLASH,LESS_THAN,GREATER_THAN,NOT_EQUAL,LESS_OR_EQUAL,GREATER_OR_EQUAL,
     CIRCUMFLEX,DOUBLE_CIRCUMFLEX,LEFT_PARENS,RIGHT_PARENS,RIGHT_ARROW,EQUALS,LEFT_SQUARE_BRACKET,
-    RIGHT_SQUARE_BRACKET
+    RIGHT_SQUARE_BRACKET,AT
   )
 
   sealed trait OCLDelimiter
+  case object AT extends Delimiter("@") with OCLDelimiter
   case object PLUS extends Delimiter("+") with OCLDelimiter
   case object MINUS extends Delimiter("-") with OCLDelimiter
   case object STAR extends Delimiter("*") with OCLDelimiter
@@ -64,8 +65,8 @@ trait OCLTokens extends TokensBase { self: Tokens =>
   case object RIGHT_PARENS extends Delimiter(")") with OCLDelimiter
   case object RIGHT_ARROW extends Delimiter("->") with OCLDelimiter
   case object EQUALS extends Delimiter("=") with OCLDelimiter
-  case object LEFT_SQUARE_BRACKET extends Keyword("[")
-  case object RIGHT_SQUARE_BRACKET extends Keyword("]")
+  case object LEFT_SQUARE_BRACKET extends Delimiter("[") with OCLDelimiter
+  case object RIGHT_SQUARE_BRACKET extends Delimiter("]") with OCLDelimiter
 
 
   val oclReserved = Set(

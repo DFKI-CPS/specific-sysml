@@ -1,10 +1,12 @@
 package specific.sysml.parser
 
+import java.util.concurrent.TimeUnit
+
 import specific.sysml._
 import specific.sysml.parser.Lexer._
 
 import scala.util.parsing.combinator.Parsers
-import scala.concurrent.duration.DurationInt
+import scala.concurrent.duration.{Duration, DurationInt, TimeUnit}
 
 /**
   * Created by martin on 19.04.16.
@@ -12,7 +14,7 @@ import scala.concurrent.duration.DurationInt
 object Parser extends Parsers {
   override type Elem = Lexer.Token
 
-  def pkg: Parser[Package] = "package" ~> name ~ separated(block | constraint) ^^ { case n~bs => Package(n,bs.collect{ case b: Block => b},Nil) }
+  def pkg: Parser[Package] = PACKAGE ~> name ~ separated(block | constraint) ^^ { case n~bs => Package(n,bs.collect{ case b: Block => b},Nil) }
 
   def content: Parser[Seq[Block]] = separated(block)
 
@@ -52,8 +54,19 @@ object Parser extends Parsers {
   def action: Parser[UnprocessedConstraint] = SLASH ~> constraint
 
   def trigger: Parser[Trigger] =
-  ( "after" ~> (num <~ "seconds") ^^ (s => Timeout(s.seconds))
+  ( "after" ~> duration ^^ Timeout
   | "receive" ~> name ~ opt(LEFT_PARENS ~> (name <~ RIGHT_PARENS)) ^^ { case p~v => Receive(p,v)} )
+
+  def duration: Parser[Duration] = num ~ timeUnit ^^ { case i ~ n => Duration(i,n).toCoarsest }
+
+  def timeUnit: Parser[TimeUnit] =
+  ( ("d" | "day" | "days") ^^^ TimeUnit.DAYS
+  | ("h" | "hour" | "hours") ^^^ TimeUnit.HOURS
+  | ("min" | "mins" | "minute" | "minutes") ^^^ TimeUnit.MINUTES
+  | ("s" | "sec" | "secs" | "second" | "seconds") ^^^ TimeUnit.SECONDS
+  | ("ms" | "milli" | "milis" | "millisecond" | "milliseconds") ^^^ TimeUnit.MILLISECONDS
+  | ("µs" | "micro" | "micros" | "microsecond" | "microseconds") ^^^ TimeUnit.MICROSECONDS
+  | ("ns" | "nano" | "nanos" | "nanosecond" | "nanoseconds") ^^^ TimeUnit.NANOSECONDS )
 
   def portsCompartment: Parser[PortsCompartment] =
     "ports" ~> indented(port, "port") ^^ (PortsCompartment)
@@ -63,7 +76,7 @@ object Parser extends Parsers {
   | name ~ typing ^^ { case n ~ t => Port(n,InOut,t) } )
 
   def flowDirection: Parser[FlowDirection] =
-    ( "in" ^^^ In
+    ( IN ^^^ In
     | "out" ^^^ Out
     | "inout" ^^^ InOut )
 
@@ -74,7 +87,7 @@ object Parser extends Parsers {
     name ~ typing ~ opt(constraint) ^^ { case name ~ tpe ~ c => Property(name,tpe,c) }
 
   def valuesCompartment: Parser[ValuesCompartment] =
-    "values" ~> indented(value, "property") ^^ (ValuesCompartment)
+    "values" ~> indented(value, "value") ^^ (ValuesCompartment)
 
   def value: Parser[Value] =
     name ~ typing ^^ { case name ~ tpe => Value(name,tpe) }

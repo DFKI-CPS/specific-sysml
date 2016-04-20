@@ -47,22 +47,22 @@ trait SysMLTokens extends OCLTokens { self: Tokens =>
 
   case class Number(value: Int) extends Token { def chars = value.toString }
 
-  val keywords = SortedSet[Keyword](
+  val delimiters = SortedSet[Delimiter](
     LEFT_PARENS,RIGHT_PARENS, LEFT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET,
     LEFT_BRACE,RIGHT_BRACE,
     COLON,RIGHT_ARROW,LEFT_ARROW,PLUS,MINUS,HASH,TILDE,
     SLASH,COMMA,STAR,ELIPSIS,DOT
-  )(Ordering.by[Keyword,(Int,String)](k => (k.chars.length, k.chars)).reverse)
+  ) (Ordering.by[Delimiter,(Int,String)](k => (k.chars.length, k.chars)).reverse)
 
   //case class Constraint(chars: String) extends Token
 
-  case object LEFT_BRACE extends Keyword("{")
-  case object RIGHT_BRACE extends Keyword("}")
-  case object COLON extends Keyword(":")
-  case object LEFT_ARROW extends Keyword("<-")
-  case object HASH extends Keyword("#")
-  case object TILDE extends Keyword("~")
-  case object COMMA extends Keyword(",")
-  case object ELIPSIS extends Keyword("..")
-  case object DOT extends Keyword(".")
+  case object LEFT_BRACE extends Delimiter("{")
+  case object RIGHT_BRACE extends Delimiter("}")
+  case object COLON extends Delimiter(":")
+  case object LEFT_ARROW extends Delimiter("<-")
+  case object HASH extends Delimiter("#")
+  case object TILDE extends Delimiter("~")
+  case object COMMA extends Delimiter(",")
+  case object ELIPSIS extends Delimiter("..")
+  case object DOT extends Delimiter(".")
 }

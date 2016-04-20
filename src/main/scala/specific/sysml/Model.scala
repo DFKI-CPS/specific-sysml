@@ -72,7 +72,7 @@ sealed trait BlockMember
 case class Property(name: String, typeAnnotation: TypeAnnotation, constraint: Option[UnprocessedConstraint]) extends BlockMember
 
 case class Value(name: String, typeAnnotation: TypeAnnotation) extends BlockMember {
-  override def toString = s"<value> $name$typeAnnotation"
+  override def toString = s"<<value>> $name$typeAnnotation"
 }
 
 case class Reference(
@@ -80,22 +80,22 @@ case class Reference(
     typeAnnotation: TypeAnnotation,
     oppositeName: Option[String],
     constraint: Option[UnprocessedConstraint]) extends BlockMember {
-  override def toString = s"<reference> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
+  override def toString = s"<<reference>> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
 }
 case class Operation(
     name: String,
     typeAnnotation: TypeAnnotation,
     parameters: Seq[Parameter],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember {
-  override def toString = s"<operation> $name(${parameters.mkString})$typeAnnotation"
+  override def toString = s"<<operation>> $name(${parameters.mkString})$typeAnnotation"
 }
 
 case class Parameter(name: String, typeAnnotation: TypeAnnotation) {
-  override def toString = s"<param> $name$typeAnnotation"
+  override def toString = s"<<param>> $name$typeAnnotation"
 }
 
 case class Port(name: String, direction: FlowDirection, typeAnnotation: TypeAnnotation) extends BlockMember {
-  override def toString = s"<port> $direction $name$typeAnnotation"
+  override def toString = s"<<port>> $direction $name$typeAnnotation"
 }
 
 case class StateMachine(name: Option[String], states: Seq[State]) extends BlockMember {

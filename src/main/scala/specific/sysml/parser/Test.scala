@@ -88,7 +88,7 @@ object Test extends App {
       |          [{ p.admitted(this) }] / { accept(p) }     -> Accepting
       |          [{ not p.admitted(this) }] / { refuse(p) } -> Refusing
       |      state Accepting
-      |        after 30 seconds              -> Waiting
+      |        after 30000 ms              -> Waiting
       |        receive passing / { pass_thru() } -> Waiting
       |      state Refusing
       |        after 30 seconds -> Waiting
@@ -125,6 +125,7 @@ object Test extends App {
       |context Door::off_red():
       |  post off_red_post: self.red = false
       |}""".stripMargin
+
   var tokens: Reader[Lexer.Token] = new IndentScanner(new Lexer.Scanner(input))
 
   Parser.phrase(Parser.pkg)(tokens) match {
