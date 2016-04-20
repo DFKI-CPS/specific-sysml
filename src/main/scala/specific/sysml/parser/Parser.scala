@@ -111,17 +111,17 @@ object Parser extends Parsers {
     }
 
   def parameterList: Parser[Seq[Parameter]] =
-    named("parameter list", LEFT_PARENS ~> (repsep(parameter,COMMA) <~ RIGHT_PARENS))
+    named("parameter list", enclosed(LEFT_PARENS, repsep(parameter,COMMA), RIGHT_PARENS))
 
   def parameter: Parser[Parameter] =
     name ~ typing ^^ { case name ~ tpe => Parameter(name,tpe) }
 
   /** @see UML Spec (15-03-01) 7.5.4 (p 77) */
   def multiplicity: Parser[Multiplicity] =
-    LEFT_SQUARE_BRACKET ~> ((multiplicityRange <~ RIGHT_SQUARE_BRACKET) ~ opt(
-      ((LEFT_BRACE ~> orderDesignator) ~ opt(COMMA ~> uniquenessDesignator)) <~ RIGHT_BRACE ^^ { case o ~ u => (o,u.getOrElse(false)) }
-    | ((LEFT_BRACE ~> uniquenessDesignator) ~ opt(COMMA ~> orderDesignator)) <~ RIGHT_BRACE ^^ { case u ~ o => (o.getOrElse(false),u) }
-    )) ^^ {
+    ( enclosed(LEFT_SQUARE_BRACKET, multiplicityRange, RIGHT_SQUARE_BRACKET) ~ opt(
+      enclosed(LEFT_BRACE, orderDesignator ~ opt(COMMA ~> uniquenessDesignator), RIGHT_BRACE) ^^ { case o ~ u => (o,u.getOrElse(false)) }
+    | enclosed(LEFT_BRACE, uniquenessDesignator ~ opt(COMMA ~> orderDesignator), RIGHT_BRACE) ^^ { case u ~ o => (o.getOrElse(false),u) })
+    ) ^^ {
       case (lb,ub)~Some((o,u)) => Multiplicity(lb,ub,o,u)
       case (lb,ub)~None => Multiplicity(lb,ub)
     }
@@ -165,11 +165,14 @@ object Parser extends Parsers {
     case n: Number => n.value
   })
 
+  def enclosed[T](left: Parser[_], middle: Parser[T], right: Parser[_]): Parser[T] =
+    left ~> (middle <~ right)
+
   def named[T](name: String, p: Parser[T]): Parser[T] = p | Parser(i => Failure(s"expected $name but found ${i.first.toString}", i))
 
   def separated[T](exprs: Parser[T]): Parser[Seq[T]] = SEPARATOR.* ~> (repsep(exprs,SEPARATOR.+) <~ SEPARATOR.*)
 
-  def indented[T](exprs: Parser[T], what: String): Parser[Seq[T]] = INDENT ~! (separated(exprs) <~ named(what,DEDENT)) ^^ (_._2) | success(Seq.empty)
+  def indented[T](exprs: Parser[T], what: String): Parser[Seq[T]] = enclosed(INDENT, separated(exprs), DEDENT) | success(Seq.empty)
 
   //implicit def elem(e: Lexer.Token): Parser[Any] = accept(e)
 }
