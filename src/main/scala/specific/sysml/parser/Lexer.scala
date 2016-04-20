@@ -5,7 +5,7 @@ import scala.util.parsing.combinator.lexical.{Lexical, Scanners}
 import scala.util.parsing.input.CharArrayReader.EofCh
 
 object Lexer extends Lexical with SysMLTokens {
-  def token = indentation | keyword | simpleName | number | constraint
+  def token = indentation | keyword | simpleName | number //| constraint
 
   def lineBreak = ( '\r' ~ '\n' | '\n' | '\r' )
 
@@ -51,7 +51,7 @@ object Lexer extends Lexical with SysMLTokens {
 
   override def whitespaceChar = elem("whitespace", ch => ch != '\r' && ch != '\n' && ch.isWhitespace)
 
-  def constraint: Parser[Constraint] = '{' ~> (allExcept(EofCh,'}') *) <~ '}' ^^ (cs => Constraint(cs.mkString))
+  //def constraint: Parser[Constraint] = '{' ~> (allExcept(EofCh,'}') *) <~ '}' ^^ (cs => Constraint(cs.mkString))
 
   def comment =
     ( '-' ~ '-' ~! (allExcept(EofCh, '\n')* )

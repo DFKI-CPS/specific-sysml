@@ -35,7 +35,7 @@ object Test extends App {
 
 
   val input =
-    """model ACS
+    """package ACS
       |
       |block Building
       |  references
@@ -48,14 +48,15 @@ object Test extends App {
       |
       |block Person
       |  operations
-      |    admitted(q: Door): Boolean
-      |      { post: q.org = self.sit and
-      |              self.aut->includes(q.dest) and
-      |              self.dap_dom->isEmpty() }
+      |    admitted(q: Door): Boolean {
+      |      post: q.org = self.sit and
+      |            self.aut->includes(q.dest) and
+      |            self.dap_dom->isEmpty()
+      |    }
       |  references
       |    aut: Building[*]
       |    sit: Building[1] {subsets aut}
-      |    dap_dom: Door#dap
+      |    dap_dom: Door <- dap
       |  constraints
       |    { self.aut->forAll(b|self.aut.building->includes(b) }
       |    { Person.allInstances()->forAll(p1, p2 | p1.dap_dom->notEmpty() and p1.dap_dom = p2.dap_dom implies p1 = p2) }
@@ -74,7 +75,7 @@ object Test extends App {
       |    off_grn(): Unit {post: not green}
       |    off_red(): Unit {post: not red}
       |  references
-      |    org: Building[1] {subsets dap.sit} <- org_dom
+      |    org: Building[1] <- org_dom {subsets dap.sit}
       |    dest: Building[1] {subsets dap.aut}
       |    dap: Person <- dap_dom
       |  ports
@@ -82,13 +83,13 @@ object Test extends App {
       |    in passing: Boolean
       |  owned behaviors
       |    state machine DoorBehavior
-      |      initial state Waiting
-      |        receive p: incoming -> choose
-      |          [p.admitted(this)] / accept(p)     -> Accepting
-      |          [not p.admitted(this)] / refuse(p) -> Refusing
+      |      state Waiting
+      |        receive incoming(p) -> choose
+      |          [{ p.admitted(this) }] / { accept(p) }     -> Accepting
+      |          [{ not p.admitted(this) }] / { refuse(p) } -> Refusing
       |      state Accepting
       |        after 30 seconds              -> Waiting
-      |        receive passing / pass_thru() -> Waiting
+      |        receive passing / { pass_thru() } -> Waiting
       |      state Refusing
       |        after 30 seconds -> Waiting
       |
@@ -124,9 +125,9 @@ object Test extends App {
       |context Door::off_red():
       |  post off_red_post: self.red = false
       |}""".stripMargin
-  var tokens: Reader[Lexer.Token] = new IndentScanner(new Lexer.Scanner(input2))
+  var tokens: Reader[Lexer.Token] = new IndentScanner(new Lexer.Scanner(input))
 
-  Parser.phrase(Parser.content)(tokens) match {
+  Parser.phrase(Parser.pkg)(tokens) match {
     case Parser.Success(b,_) => println(b)
     case Parser.NoSuccess(msg,i) =>
       println(s"$msg [${i.pos}]:\n${i.pos.longString}")

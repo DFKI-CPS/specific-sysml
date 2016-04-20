@@ -6,42 +6,67 @@ import scala.util.parsing.combinator.token.Tokens
 /**
   * Created by martin on 15.04.16.
   */
-trait OCLTokens { self: Tokens =>
+trait OCLTokens extends TokensBase { self: Tokens =>
   val oclKeywords = SortedSet(
     AND, BODY, CONTEXT, DEF, DERIVE, ELSE, ENDIF, ENDPACKAGE, FALSE, IF,
     IMPLIES, IN, INIT, INV, INVALID, LET, NOT, NULL, OR, PACKAGE, POST,
     PRE, SELF, STATIC, THEN, TRUE, XOR
   )(Ordering.by(_.chars))
 
-  sealed abstract class OCLKeyword(val chars: String) extends Token
+  sealed trait OCLKeyword
+  case object AND extends Keyword("and") with OCLKeyword
+  case object BODY extends Keyword("body") with OCLKeyword
+  case object CONTEXT extends Keyword("context") with OCLKeyword
+  case object DEF extends Keyword("def") with OCLKeyword
+  case object DERIVE extends Keyword("derive") with OCLKeyword
+  case object ELSE extends Keyword("else") with OCLKeyword
+  case object ENDIF extends Keyword("endif") with OCLKeyword
+  case object ENDPACKAGE extends Keyword("endpackage") with OCLKeyword
+  case object FALSE extends Keyword("false") with OCLKeyword
+  case object IF extends Keyword("if") with OCLKeyword
+  case object IMPLIES extends Keyword("implies") with OCLKeyword
+  case object IN extends Keyword("in") with OCLKeyword
+  case object INIT extends Keyword("init") with OCLKeyword
+  case object INV extends Keyword("inv") with OCLKeyword
+  case object INVALID extends Keyword("invalid") with OCLKeyword
+  case object LET extends Keyword("let") with OCLKeyword
+  case object NOT extends Keyword("not") with OCLKeyword
+  case object NULL extends Keyword("null") with OCLKeyword
+  case object OR extends Keyword("or") with OCLKeyword
+  case object PACKAGE extends Keyword("package") with OCLKeyword
+  case object POST extends Keyword("post") with OCLKeyword
+  case object PRE extends Keyword("pre") with OCLKeyword
+  case object SELF extends Keyword("self") with OCLKeyword
+  case object STATIC extends Keyword("static") with OCLKeyword
+  case object THEN extends Keyword("then") with OCLKeyword
+  case object TRUE extends Keyword("true") with OCLKeyword
+  case object XOR extends Keyword("xor") with OCLKeyword
 
-  case object AND extends OCLKeyword("and")
-  case object BODY extends OCLKeyword("body")
-  case object CONTEXT extends OCLKeyword("context")
-  case object DEF extends OCLKeyword("def")
-  case object DERIVE extends OCLKeyword("derive")
-  case object ELSE extends OCLKeyword("else")
-  case object ENDIF extends OCLKeyword("endif")
-  case object ENDPACKAGE extends OCLKeyword("endpackage")
-  case object FALSE extends OCLKeyword("false")
-  case object IF extends OCLKeyword("if")
-  case object IMPLIES extends OCLKeyword("implies")
-  case object IN extends OCLKeyword("in")
-  case object INIT extends OCLKeyword("init")
-  case object INV extends OCLKeyword("inv")
-  case object INVALID extends OCLKeyword("invalid")
-  case object LET extends OCLKeyword("let")
-  case object NOT extends OCLKeyword("not")
-  case object NULL extends OCLKeyword("null")
-  case object OR extends OCLKeyword("or")
-  case object PACKAGE extends OCLKeyword("package")
-  case object POST extends OCLKeyword("post")
-  case object PRE extends OCLKeyword("pre")
-  case object SELF extends OCLKeyword("self")
-  case object STATIC extends OCLKeyword("static")
-  case object THEN extends OCLKeyword("then")
-  case object TRUE extends OCLKeyword("true")
-  case object XOR extends OCLKeyword("xor")
+  val oclDelimiters = Set(
+    PLUS,MINUS,STAR,SLASH,LESS_THAN,GREATER_THAN,NOT_EQUAL,LESS_OR_EQUAL,GREATER_OR_EQUAL,
+    CIRCUMFLEX,DOUBLE_CIRCUMFLEX,LEFT_PARENS,RIGHT_PARENS,RIGHT_ARROW,EQUALS,LEFT_SQUARE_BRACKET,
+    RIGHT_SQUARE_BRACKET
+  )
+
+  sealed trait OCLDelimiter
+  case object PLUS extends Delimiter("+") with OCLDelimiter
+  case object MINUS extends Delimiter("-") with OCLDelimiter
+  case object STAR extends Delimiter("*") with OCLDelimiter
+  case object SLASH extends Delimiter("/") with OCLDelimiter
+  case object LESS_THAN extends Delimiter("<") with OCLDelimiter
+  case object GREATER_THAN extends Delimiter(">") with OCLDelimiter
+  case object NOT_EQUAL extends Delimiter("<>") with OCLDelimiter
+  case object LESS_OR_EQUAL extends Delimiter("<=") with OCLDelimiter
+  case object GREATER_OR_EQUAL extends Delimiter(">=") with OCLDelimiter
+  case object CIRCUMFLEX extends Delimiter("^") with OCLDelimiter
+  case object DOUBLE_CIRCUMFLEX extends Delimiter("^^") with OCLDelimiter
+  case object LEFT_PARENS extends Delimiter("(") with OCLDelimiter
+  case object RIGHT_PARENS extends Delimiter(")") with OCLDelimiter
+  case object RIGHT_ARROW extends Delimiter("->") with OCLDelimiter
+  case object EQUALS extends Delimiter("=") with OCLDelimiter
+  case object LEFT_SQUARE_BRACKET extends Keyword("[")
+  case object RIGHT_SQUARE_BRACKET extends Keyword("]")
+
 
   val oclReserved = Set(
     "Bag",
@@ -60,6 +85,4 @@ trait OCLTokens { self: Tokens =>
     "Tuple",
     "UnlimitedNatural"
   )
-
-  case class SimpleName(chars: String) extends Token
 }
