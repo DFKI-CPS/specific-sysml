@@ -66,14 +66,14 @@ object Test extends App {
       |    green: Boolean
       |    red: Boolean
       |  operations
-      |    accept(p: Person): Unit
+      |    accept(p: Person)
       |      { pre: p.admitted(self) }
       |      { post: p.sit == p }
       |    refuse(p: Person): Unit
       |      { post: p.sit == p@pre.sit }
       |    pass_thru(): Unit
-      |    off_grn(): Unit {post: not green}
-      |    off_red(): Unit {post: not red}
+      |    off_grn() {post: not green}
+      |    off_red() {post: not red}
       |  references
       |    org: Building[1] <- org_dom {subsets dap.sit}
       |    dest: Building[1] {subsets dap.aut}

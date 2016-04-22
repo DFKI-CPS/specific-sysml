@@ -111,8 +111,8 @@ object Parser extends Parsers {
     "operations" ~> indented(operation, "operation") ^^ (OperationsCompartment)
 
   def operation: Parser[Operation] =
-    name ~ parameterList ~ named("return type", typing) ~ constraint.* ~ opt(indented(constraint,"constraint")) ^^ {
-      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name,tpe,ps,cs1 ++ cs2.getOrElse(Nil))
+    name ~ parameterList ~ opt(named("return type", typing)) ~ constraint.* ~ opt(indented(constraint,"constraint")) ^^ {
+      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name,tpe.getOrElse(TypeAnnotation(uml.ResolvedName(ocl.Types.VoidType), Multiplicity.default)),ps,cs1 ++ cs2.getOrElse(Nil))
     }
 
   def parameterList: Parser[Seq[Parameter]] =

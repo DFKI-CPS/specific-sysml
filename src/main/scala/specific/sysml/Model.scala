@@ -20,7 +20,7 @@ case class Block(override val name: String, compartments: Seq[BlockCompartment])
   override def toString = s"<<block>> $name\n${indent(compartments.mkString("\n"))}"
 }
 case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
-  override def toString = s": ?'$name'$multiplicity"
+  override def toString = s": $name$multiplicity"
 }
 
 case class UnprocessedConstraint(content: String) extends BlockMember
