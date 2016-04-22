@@ -2,8 +2,13 @@ package specific.sysml.parser
 
 import java.util.concurrent.TimeUnit
 
+import specific.uml
+import specific.ocl
+import specific.ocl.CollectionKind
 import specific.sysml._
 import specific.sysml.parser.Lexer._
+import specific.uml.Types.Classifier
+import specific.uml.{PathName, SimpleName}
 
 import scala.util.parsing.combinator.Parsers
 import scala.concurrent.duration.{Duration, DurationInt, TimeUnit}
@@ -144,9 +149,38 @@ object Parser extends Parsers {
   def multiplicityBound: Parser[MultiplicityBound] =
     num ^^ N | STAR ^^^ Many
 
-  def typing: Parser[UnresolvedTypeAnnotation] =
-    named("type signature", COLON ~> named("type name", rep1sep(name,DOT)) ~ opt(multiplicity)) ^^ {
-      case nps~mult => UnresolvedTypeAnnotation(nps.mkString("."), mult.getOrElse(Multiplicity.default))
+  def pathName =
+    ( simpleName
+    | simpleName ~ ("::" ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ PathName)
+
+  def typeExp: Parser[uml.Name] = pathName | primitiveType | oclType | collectionType ^^ uml.ResolvedName[Classifier]
+
+  def primitiveType: Parser[uml.ResolvedName[Classifier]] =
+    ( "Boolean" ^^^ uml.Types.Boolean
+    | "Integer" ^^^ uml.Types.Integer
+    | "Real" ^^^ uml.Types.Real
+    | "String" ^^^ uml.Types.String
+    | "UnlimitedNatural" ^^^ uml.Types.UnlimitedNatural) ^^ uml.ResolvedName[Classifier]
+
+  def oclType: Parser[uml.ResolvedName[Classifier]] =
+    ( "OclAny" ^^^ ocl.Types.AnyType
+    | "OclInvalid" ^^^ ocl.Types.InvalidType
+    | "OclMessage" ~! err("OclMessage is currently not supported") ^^^ ocl.Types.InvalidType
+    | "OclVoid" ^^^ ocl.Types.VoidType)  ^^ uml.ResolvedName[Classifier]
+
+  def collectionType: Parser[ocl.Types.CollectionType] =
+    collectionTypeIdentifier ~ enclosed(LEFT_PARENS, typeExp, RIGHT_PARENS) ^^ { case k~t => ocl.Types.collection(k,t) }
+
+  def collectionTypeIdentifier: Parser[CollectionKind] =
+    ( "Set" ^^^ CollectionKind.Set
+    | "Bag" ^^^ CollectionKind.Bag
+    | "Sequence" ^^^ CollectionKind.Sequence
+    | "Collection" ^^^ CollectionKind.Collection
+    | "OrderedSet" ^^^ CollectionKind.OrderedSet )
+
+  def typing: Parser[TypeAnnotation] =
+    named("type signature", COLON ~> typeExp ~ opt(multiplicity)) ^^ {
+      case nps~mult => TypeAnnotation(nps, mult.getOrElse(Multiplicity.default))
     }
 
   def constraint: Parser[UnprocessedConstraint] = LEFT_BRACE ~! ( rep(elem("constraint content",_ != RIGHT_BRACE)) <~ RIGHT_BRACE ) ^^ {
@@ -155,6 +189,14 @@ object Parser extends Parsers {
 
   implicit def keyName(what: String): Parser[String] = acceptMatch(what, {
     case n: Name if n.chars == what => what
+  })
+
+  def simpleName: Parser[SimpleName] = acceptMatch("ocl simple name", {
+    case Name(cs) if !oclReserved.contains(cs) => SimpleName(cs)
+  })
+
+  def unreservedSimpleName: Parser[SimpleName] = acceptMatch("ocl simple name", {
+    case Name(cs) => SimpleName(cs)
   })
 
   def name: Parser[String] = acceptMatch("identifier", {

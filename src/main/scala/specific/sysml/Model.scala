@@ -1,5 +1,8 @@
 package specific.sysml
 
+import specific.uml.Name
+import specific.uml.Types.Classifier
+
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
@@ -13,12 +16,10 @@ case class Package(name: String, blocks: Seq[Block], subpackages: Seq[Package]) 
 
 sealed trait Type
 
-case class Block(name: String, compartments: Seq[BlockCompartment]) extends Type {
+case class Block(override val name: String, compartments: Seq[BlockCompartment]) extends Classifier(name) {
   override def toString = s"<<block>> $name\n${indent(compartments.mkString("\n"))}"
 }
-
-sealed trait TypeAnnotation
-case class UnresolvedTypeAnnotation(name: String, multiplicity: Multiplicity) extends TypeAnnotation {
+case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
   override def toString = s": ?'$name'$multiplicity"
 }
 

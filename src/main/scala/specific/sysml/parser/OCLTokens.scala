@@ -1,5 +1,8 @@
 package specific.sysml.parser
 
+import specific.uml
+import specific.ocl
+
 import scala.collection.immutable.SortedSet
 import scala.util.parsing.combinator.token.Tokens
 
@@ -45,7 +48,7 @@ trait OCLTokens extends TokensBase { self: Tokens =>
   val oclDelimiters = Set(
     PLUS,MINUS,STAR,SLASH,LESS_THAN,GREATER_THAN,NOT_EQUAL,LESS_OR_EQUAL,GREATER_OR_EQUAL,
     CIRCUMFLEX,DOUBLE_CIRCUMFLEX,LEFT_PARENS,RIGHT_PARENS,RIGHT_ARROW,EQUALS,LEFT_SQUARE_BRACKET,
-    RIGHT_SQUARE_BRACKET,AT,PIPE
+    RIGHT_SQUARE_BRACKET,AT,PIPE,DOUBLE_COLON
   )
 
   sealed trait OCLDelimiter
@@ -61,6 +64,7 @@ trait OCLTokens extends TokensBase { self: Tokens =>
   case object GREATER_OR_EQUAL extends Delimiter(">=") with OCLDelimiter
   case object CIRCUMFLEX extends Delimiter("^") with OCLDelimiter
   case object DOUBLE_CIRCUMFLEX extends Delimiter("^^") with OCLDelimiter
+  case object DOUBLE_COLON extends Delimiter("::") with OCLDelimiter
   case object LEFT_PARENS extends Delimiter("(") with OCLDelimiter
   case object RIGHT_PARENS extends Delimiter(")") with OCLDelimiter
   case object RIGHT_ARROW extends Delimiter("->") with OCLDelimiter
