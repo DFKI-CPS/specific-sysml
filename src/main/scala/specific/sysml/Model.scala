@@ -1,6 +1,6 @@
 package specific.sysml
 
-import specific.uml.Name
+import specific.uml.{Name, UnlimitedNatural}
 import specific.uml.Types.Classifier
 
 import scala.concurrent.Future
@@ -36,25 +36,14 @@ case class PortsCompartment(ports: Seq[Port]) extends BlockCompartment("ports", 
 case class BehaviorCompartment(stms: Seq[StateMachine]) extends BlockCompartment("owned behaviors", stms)
 case class ConstraintsCompartment(rawConstraints: Seq[UnprocessedConstraint]) extends BlockCompartment("constraints", rawConstraints)
 
-sealed trait MultiplicityBound
-case object Many extends MultiplicityBound {
-  override def toString = "*"
-}
-case class N(n: Int) extends MultiplicityBound {
-  override def toString = n.toString
-}
-
 case class Multiplicity(
-  lower: MultiplicityBound,
-  upper: MultiplicityBound,
-  ordered: Boolean = false,
-  unique: Boolean = false) {
+   lower: UnlimitedNatural,
+   upper: UnlimitedNatural,
+   ordered: Boolean = false,
+   unique: Boolean = false) {
   private def orderedConstraint = if (ordered) "ordered" else "unordered"
   private def uniqueConstraint = if (unique) "unique" else "nonunique"
   override def toString = s"[$lower..$upper] {$orderedConstraint, $uniqueConstraint}"
-}
-object Multiplicity {
-  def default = Multiplicity(N(0),N(1))
 }
 
 sealed trait FlowDirection {

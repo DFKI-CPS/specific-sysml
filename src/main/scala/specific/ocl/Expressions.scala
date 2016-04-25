@@ -6,6 +6,7 @@ object Expressions {
 
   sealed trait OclExpression
 
+
   /**
     * An IfExp results in one of two alternative expressions depending on the evaluated value of a condition. Note that both the
     * thenExpression and the elseExpression are mandatory. The reason behind this is that an if expression should always result
