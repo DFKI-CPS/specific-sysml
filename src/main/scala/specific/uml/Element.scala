@@ -1,15 +1,17 @@
 package specific.uml
 
+import specific.util._
+
 trait Element {
-  def comments: Set[Comment]
-  def ownedElements: Set[Element]
+  def comments: Set[Comment] = ???
+  def ownedElements: Set[Element] = ???
 
   def ownedComments: Set[Comment] =
-    ownedElements.collect { case c: Comment => c }
+    ownedElements collect every [Comment]
 
   def relationships: Set[Relationship] =
-    ownedElements.collect { case r: Relationship => r }
+    ownedElements collect every [Relationship]
 
   def directedRelationships: Set[DirectedRelationship] =
-    relationships.collect { case d: DirectedRelationship => d }
+    relationships collect every [DirectedRelationship]
 }

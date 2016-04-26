@@ -6,7 +6,7 @@ import scala.util.parsing.combinator.token.Tokens
 /**
   * Created by martin on 15.04.16.
   */
-trait OclTokens { self: Tokens =>
+object OclTokens extends Tokens {
   val oclKeywords = SortedSet(
     AND, BODY, CONTEXT, DEF, DERIVE, ELSE, ENDIF, ENDPACKAGE, FALSE, IF,
     IMPLIES, IN, INIT, INV, INVALID, LET, NOT, NULL, OR, PACKAGE, POST, PRE,
@@ -42,7 +42,7 @@ trait OclTokens { self: Tokens =>
   case object TRUE extends BooleanLiteral(true)
   case object XOR extends Keyword("xor")
 
-  def delimiters = SortedSet[Delimiter](
+  val delimiters = SortedSet[Delimiter](
     AT, CIRCUMFLEX, COLON, COMMA, DOUBLE_CIRCUMFLEX, DOUBLE_COLON, DOT, EQUALS,
     GREATER_OR_EQUAL, GREATER_THAN, LEFT_BRACE, LEFT_PARENS,
     LEFT_SQUARE_BRACKET, LESS_OR_EQUAL, LESS_THAN, MINUS, NOT_EQUAL, PIPE, PLUS,

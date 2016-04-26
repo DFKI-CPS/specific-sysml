@@ -8,8 +8,12 @@ import scala.util.parsing.combinator.token.Tokens
 /**
   * Created by martin on 18.04.16.
   */
-trait SysMLTokens extends OclTokens { self: Tokens =>
+object SysMLTokens {
+  type Token = OclTokens.Token
+  type Delimiter = OclTokens.Delimiter
+
   sealed trait Indentation extends Token { val n: Int; val chars = "" }
+
   object Indentation {
     case object None extends Indentation { val n = 0 }
     case class Tabs(n: Int) extends Indentation {
@@ -43,13 +47,9 @@ trait SysMLTokens extends OclTokens { self: Tokens =>
     }
   }
 
-  override def delimiters = super.delimiters ++ SortedSet[Delimiter](
-    ELIPSIS, HASH, LEFT_ARROW, LEFT_PARENS,
-    LEFT_SQUARE_BRACKET, MINUS, PLUS, RIGHT_ARROW, RIGHT_PARENS,
-    RIGHT_SQUARE_BRACKET, SLASH, STAR, TILDE
+  val delimiters = OclTokens.delimiters ++ SortedSet[Delimiter](
+    ELIPSIS, HASH, LEFT_ARROW, TILDE
   ) (Ordering.by[Delimiter,(Int,String)](k => (k.chars.length, k.chars)).reverse)
-
-  //case class Constraint(chars: String) extends Token
 
   case object ELIPSIS extends Delimiter("..")
   case object HASH extends Delimiter("#")

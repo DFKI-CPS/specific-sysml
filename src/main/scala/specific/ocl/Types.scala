@@ -1,5 +1,6 @@
 package specific.ocl
 
+import specific.ocl.Expressions.VariableDeclaration
 import specific.uml.Name
 import specific.uml.Types._
 
@@ -12,7 +13,7 @@ object Types {
     * sole instance of AnyType. This metaclass allows defining the special property of being the generalization of all other
     * Classifiers, including Classes, DataTypes, and PrimitiveTypes.
     */
-  case object AnyType extends Classifier("AnyType")
+  case object AnyType extends Classifier(Some("AnyType"))
 
   /**
     * VoidType is the metaclass of the OclVoid type that conforms to all types except the OclInvalid type. The only instance of
@@ -34,7 +35,7 @@ object Types {
     * can be used as part of a tuple. In particular, a TupleType may contain other tuple types and collection types. Each attribute
     * of a TupleType represents a single feature of a TupleType. Each part is uniquely identified by its name.
     */
-  case class TupleType(parts: Map[String,Classifier]) extends DataType("TupleType")
+  case class TupleType(parts: Seq[VariableDeclaration]) extends DataType("TupleType")
 
   /**
     * CollectionType describes a list of elements of a particular given type. CollectionType is a concrete metaclass whose
@@ -45,7 +46,7 @@ object Types {
     * restriction on the element type of a collection type. This means in particular that a collection type may be parameterized
     * with other collection types allowing collections to be nested arbitrarily deep.
     */
-  sealed class CollectionType(override val name: String = "Collection", val elementType: Name) extends DataType(name)
+  sealed class CollectionType(name: String = "Collection", val elementType: Name) extends DataType(name)
 
   /**
     * OrderedSetType is a collection type that describes a set of elements where each distinct element occurs only once in the
@@ -81,7 +82,7 @@ object Types {
     */
   case class SetType(override val elementType: Name) extends CollectionType("SetType", elementType)
 
-  def collection(kind: CollectionKind, elementType: Name) = kind match {
+  def collection(kind: CollectionKind, elementType: Name): CollectionType = kind match {
     case CollectionKind.OrderedSet => OrderedSetType(elementType)
     case CollectionKind.Bag => BagType(elementType)
     case CollectionKind.Collection => new CollectionType("Collection", elementType)

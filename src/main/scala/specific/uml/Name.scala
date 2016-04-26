@@ -10,5 +10,5 @@ case class PathName(parts: Seq[SimpleName]) extends UnresolvedName {
 }
 
 case class ResolvedName[T <: NamedElement](element: T) extends Name {
-  override def toString = element.name
+  override def toString = element.name.getOrElse("<unnamed>")
 }

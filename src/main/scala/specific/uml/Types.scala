@@ -4,10 +4,10 @@ trait TypedElement {
   val typing: Type
 }
 
-trait Type
-
 object Types {
-  abstract class Classifier(val name: String) extends Type with NamedElement
+  abstract class Classifier(val name: Option[String]) extends Type with NamedElement {
+    def this(name: String) = this(Some(name))
+  }
   abstract class DataType(name: String) extends Classifier(name)
 
   sealed abstract class PrimitiveType[R](name: String) extends DataType(name)

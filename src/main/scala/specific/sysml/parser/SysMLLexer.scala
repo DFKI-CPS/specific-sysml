@@ -6,7 +6,11 @@ import scala.collection.immutable.SortedSet
 import scala.util.parsing.combinator.lexical.{Lexical, Scanners}
 import scala.util.parsing.input.CharArrayReader.EofCh
 
-object SysMLLexer extends OclLexer with SysMLTokens {
+object SysMLLexer extends OclLexer {
+  import SysMLTokens._
+
+  override val delimiters = SysMLTokens.delimiters
+
   override def token = indentation | super.token
 
   def lineBreak = ( '\r' ~ '\n' | '\n' | '\r' )
@@ -30,5 +34,4 @@ object SysMLLexer extends OclLexer with SysMLTokens {
     rep1(parser) ^^ (_.length)
 
   override def whitespaceChar = elem("whitespace", ch => ch != '\r' && ch != '\n' && ch.isWhitespace)
-
 }

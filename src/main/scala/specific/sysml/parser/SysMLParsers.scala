@@ -4,7 +4,7 @@ import java.util.concurrent.TimeUnit
 
 import specific.{ocl, uml}
 import specific.ocl.CollectionKind
-import specific.ocl.parser.OclParsers
+import specific.ocl.parser.{OclLexer, OclParsers, OclTokens}
 import specific.sysml._
 import specific.sysml.parser.SysMLLexer._
 import specific.uml.Types.Classifier
@@ -17,7 +17,9 @@ import scala.concurrent.duration.{Duration, TimeUnit}
   * Created by martin on 19.04.16.
   */
 object SysMLParsers extends OclParsers {
-  override type Elem = SysMLLexer.Token
+  override type Elem = OclLexer.Token
+  import specific.ocl.parser.OclTokens._
+  import SysMLTokens._
 
   def pkg: Parser[Package] = PACKAGE ~> name ~ separated(block | constraint) ^^ { case n~bs => Package(n,bs.collect{ case b: Block => b},Nil) }
 
@@ -157,29 +159,6 @@ object SysMLParsers extends OclParsers {
     ( integer ^^ UnlimitedNatural.Finite
     | STAR ^^^ UnlimitedNatural.Infinity )
 
-  def primitiveType: Parser[uml.ResolvedName[Classifier]] =
-    ( "Boolean" ^^^ uml.Types.Boolean
-    | "Integer" ^^^ uml.Types.Integer
-    | "Real" ^^^ uml.Types.Real
-    | "String" ^^^ uml.Types.String
-    | "UnlimitedNatural" ^^^ uml.Types.UnlimitedNatural) ^^ uml.ResolvedName[Classifier]
-
-  def oclType: Parser[uml.ResolvedName[Classifier]] =
-    ( "OclAny" ^^^ ocl.Types.AnyType
-    | "OclInvalid" ^^^ ocl.Types.InvalidType
-    | "OclMessage" ~! err("OclMessage is currently not supported") ^^^ ocl.Types.InvalidType
-    | "OclVoid" ^^^ ocl.Types.VoidType)  ^^ uml.ResolvedName[Classifier]
-
-  def collectionType: Parser[ocl.Types.CollectionType] =
-    collectionTypeIdentifier ~ enclosed(LEFT_PARENS, typeExp, RIGHT_PARENS) ^^ { case k~t => ocl.Types.collection(k,t) }
-
-  def collectionTypeIdentifier: Parser[CollectionKind] =
-    ( "Set" ^^^ CollectionKind.Set
-    | "Bag" ^^^ CollectionKind.Bag
-    | "Sequence" ^^^ CollectionKind.Sequence
-    | "Collection" ^^^ CollectionKind.Collection
-    | "OrderedSet" ^^^ CollectionKind.OrderedSet )
-
   def typing: Parser[TypeAnnotation] =
     named("type signature", COLON ~> typeExp ~ opt(multiplicity)) ^^ {
       case nps~mult => TypeAnnotation(nps, mult.getOrElse(defaultMultiplicity))
@@ -190,7 +169,7 @@ object SysMLParsers extends OclParsers {
   }
 
   def name: Parser[String] = acceptMatch("identifier", {
-    case n: SysMLLexer.SimpleName => n.chars
+    case n: OclTokens.SimpleName => n.chars
   })
 
   def integer: Parser[BigInt] = acceptMatch("identifier", {

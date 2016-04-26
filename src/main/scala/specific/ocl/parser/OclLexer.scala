@@ -1,5 +1,6 @@
 package specific.ocl.parser
 
+import scala.collection.SortedSet
 import scala.collection.immutable.NumericRange
 import scala.util.parsing.combinator.lexical.Lexical
 import scala.util.parsing.input.CharArrayReader._
@@ -10,7 +11,12 @@ object OclLexer extends OclLexer
 /**
   * Created by martin on 25.04.16.
   */
-trait OclLexer extends Lexical with OclTokens {
+trait OclLexer extends Lexical {
+  type Token = OclTokens.Token
+  import OclTokens._
+
+  val delimiters = OclTokens.delimiters
+
   def token: Parser[Token] = keyword | delimiter | simpleName | primitiveLiteral
   def whitespace: Parser[Any] = (comment | whitespaceChar).*
 

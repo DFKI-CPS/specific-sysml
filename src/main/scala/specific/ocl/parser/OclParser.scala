@@ -1,7 +1,11 @@
 package specific.ocl.parser
 
 import specific.ocl.CollectionKind
+import specific.ocl.Expressions.VariableDeclaration
 import specific.sysml.parser.SysMLLexer
+import specific.{ocl, uml}
+import specific.uml.Types.Classifier
+import specific.uml.{Name, PathName, Types}
 import specific.util.ParserHelpers
 
 import scala.util.parsing.combinator.Parsers
@@ -12,9 +16,12 @@ object OclParsers extends OclParsers
   * Created by martin on 25.04.16.
   */
 trait OclParsers extends Parsers with ParserHelpers {
+  import OclTokens._
+
   override type Elem = OclLexer.Token
 
   import OclLexer._
+  implicit def elem[T <: Elem](elem: T): Parser[Elem] = accept(elem)
 
   def oclExpression: Parser[Any] =
     ( callExp
@@ -24,45 +31,45 @@ trait OclParsers extends Parsers with ParserHelpers {
     | oclMessageExp
     | ifExp )
 
-  def variableExp =
+  def variableExp: Parser[Any] =
     simpleName | SELF
 
   def simpleName = acceptMatch("simple name", {
-    case s: OclLexer.SimpleName if !s.isReserved => s
+    case s: OclTokens.SimpleName if !s.isReserved => specific.uml.SimpleName(s.chars)
   })
 
   def restrictedKeyword = acceptMatch("restricted keyword", {
-    case s: OclLexer.SimpleName if s.isReserved => s
+    case s: OclTokens.SimpleName if s.isReserved => specific.uml.SimpleName(s.chars)
   })
 
   def unreservedSimpleName = acceptMatch("unreserved simple name", {
-    case s: OclLexer.SimpleName => s
+    case s: OclTokens.SimpleName => specific.uml.SimpleName(s.chars)
   })
 
-  def pathName =
+  def pathName: Parser[Name] =
     ( simpleName
-    | simpleName ~ (DOUBLE_COLON ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) )
+    | simpleName ~ (DOUBLE_COLON ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ PathName )
 
-  def literalExp =
+  def literalExp: Parser[Any] =
     ( enumLiteralExp
     | collectionLiteralExp
     | tupleLiteralExp
     | primitiveLiteralExp
     | typeLiteralExp )
 
-  def enumLiteralExp =
+  def enumLiteralExp: Parser[Any] =
     pathName ~ DOUBLE_COLON ~ simpleName
 
-  def collectionLiteralExp =
+  def collectionLiteralExp: Parser[Any] =
     collectionTypeIdentifier ~ enclosed(LEFT_BRACE, collectionLiteralParts, RIGHT_BRACE)
 
-  def collectionTypeIdentifier =
+  def collectionTypeIdentifier: Parser[CollectionKind] =
     ( "Set" ^^^ CollectionKind.Set
     | "Bag" ^^^ CollectionKind.Bag
     | "Sequence" ^^^ CollectionKind.Sequence
     | "Collection" ^^^ CollectionKind.Collection
     | "OrderedSet" ^^^ CollectionKind.OrderedSet )
-
+  
   def collectionLiteralParts = rep1sep(collectionLiteralPart, COMMA)
 
   def collectionLiteralPart =
@@ -80,7 +87,7 @@ trait OclParsers extends Parsers with ParserHelpers {
     | nullLiteralExp
     | invalidLiteralExp )
 
-  def tupleLiteralExp = "Tuple" ~> enclosed(LEFT_BRACE, variableDeclarationList, RIGHT_BRACE)
+  def tupleLiteralExp: Parser[Any] = "Tuple" ~> enclosed(LEFT_BRACE, variableDeclarationList, RIGHT_BRACE)
 
   def unlimitedNaturalLiteralExp = integerLiteralExp | STAR
 
@@ -115,36 +122,40 @@ trait OclParsers extends Parsers with ParserHelpers {
         (PIPE ~> oclExpression),
       RIGHT_PARENS))
 
-  def variableDeclaration =
-    simpleName ~ opt(COLON ~> typeExp) ~ opt(EQUALS ~> oclExpression)
+  def variableDeclaration: Parser[VariableDeclaration] =
+    simpleName ~ opt(COLON ~> typeExp) ^^ { //~ opt(EQUALS ~> oclExpression)
+      case name ~ tpe => VariableDeclaration(name.name,tpe)
+    }
 
-  def typeExp: Parser[Any] =
+  def typeExp: Parser[Name] =
     ( pathName
     | collectionType
     | tupleType
     | primitiveType
     | oclType )
 
-  def primitiveType =
-    ( "Boolean"
-    | "Integer"
-    | "Real"
-    | "String"
-    | "UnlimitedNatural" )
+  def primitiveType: Parser[uml.ResolvedName[Classifier]] =
+    ( "Boolean" ^^^ uml.Types.Boolean
+    | "Integer" ^^^ uml.Types.Integer
+    | "Real" ^^^ uml.Types.Real
+    | "String" ^^^ uml.Types.String
+    | "UnlimitedNatural" ^^^ uml.Types.UnlimitedNatural) ^^ uml.ResolvedName[Classifier]
 
-  def oclType =
-    ( "OclAny"
-    | "OclInvalid"
-    | "OclMessage"
-    | "OclVoid" )
+  def oclType: Parser[uml.ResolvedName[Classifier]] =
+    ( "OclAny" ^^^ ocl.Types.AnyType
+    | "OclInvalid" ^^^ ocl.Types.InvalidType
+    | "OclMessage" ~! err("OclMessage is currently not supported") ^^^ ocl.Types.InvalidType
+    | "OclVoid" ^^^ ocl.Types.VoidType)  ^^ uml.ResolvedName[Classifier]
 
-  def collectionType =
-    collectionTypeIdentifier ~ enclosed(LEFT_PARENS, typeExp, RIGHT_PARENS)
+  def collectionType: Parser[uml.ResolvedName[Classifier]] =
+    collectionTypeIdentifier ~ enclosed(LEFT_PARENS, typeExp, RIGHT_PARENS) ^^ {
+      case ct ~ t => uml.ResolvedName(ocl.Types.collection(ct,t))
+    }
 
-  def tupleType =
-    "Tuple" ~> enclosed(LEFT_PARENS, variableDeclarationList, RIGHT_PARENS)
+  def tupleType: Parser[uml.ResolvedName[Classifier]] =
+    "Tuple" ~> enclosed(LEFT_PARENS, variableDeclarationList, RIGHT_PARENS) ^^ ocl.Types.TupleType ^^ uml.ResolvedName[Classifier]
 
-  def variableDeclarationList =
+  def variableDeclarationList: Parser[Seq[VariableDeclaration]] =
     rep1sep(variableDeclaration, COMMA)
 
   def featureCallExp =
@@ -153,14 +164,14 @@ trait OclParsers extends Parsers with ParserHelpers {
     | navigationCallExp )
 
   def operationCallExp =
-    ( oclExpression ~ simpleName ~ oclExpression
-    | oclExpression ~ (RIGHT_ARROW ~> simpleName) ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
-    | oclExpression ~ (DOT ~> simpleName) ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
-    | simpleName ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
-    | oclExpression ~ (DOT ~> simpleName) ~ isMarkedPre ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
+    ( simpleName ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
     | simpleName ~ isMarkedPre ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
     | pathName ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
     | simpleName ~ oclExpression
+    | oclExpression ~ simpleName ~ oclExpression
+    | oclExpression ~ (RIGHT_ARROW ~> simpleName) ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
+    | oclExpression ~ (DOT ~> simpleName) ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
+    | oclExpression ~ (DOT ~> simpleName) ~ isMarkedPre ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
     | oclExpression ~ (DOT ~> pathName) ~ (DOUBLE_COLON ~> simpleName) ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS)
     | oclExpression ~ (DOT ~> pathName) ~ (DOUBLE_COLON ~> simpleName) ~ isMarkedPre ~ enclosed(LEFT_PARENS, arguments, RIGHT_PARENS))
 
@@ -182,23 +193,23 @@ trait OclParsers extends Parsers with ParserHelpers {
 
   def arguments = rep1sep(oclExpression, COMMA)
 
-  def letExp = LET ~> variableDeclaration ~ letExpSub
+  def letExp: Parser[Any] = LET ~> variableDeclaration ~ letExpSub
 
   def letExpSub: Parser[Any] =
     ( COMMA ~> variableDeclaration ~ letExpSub
     | IN ~> oclExpression )
 
-  def oclMessageExp =
+  def oclMessageExp: Parser[Any] =
     ( oclExpression ~ (DOUBLE_CIRCUMFLEX ~> simpleName) ~ enclosed(LEFT_PARENS, oclMessageArguments, RIGHT_PARENS)
     | oclExpression ~ (CIRCUMFLEX ~> simpleName) ~ enclosed(LEFT_PARENS, oclMessageArguments, RIGHT_PARENS) )
 
-  def oclMessageArguments = rep1sep(oclMessageArg, COMMA)
+  def oclMessageArguments: Parser[Any] = rep1sep(oclMessageArg, COMMA)
 
-  def oclMessageArg =
+  def oclMessageArg: Parser[Any] =
     ( QUESTIONMARK ~ opt(COLON ~ typeExp)
     | oclExpression )
 
-  def ifExp =
+  def ifExp: Parser[Any] =
     (IF ~> oclExpression) ~
     (THEN ~> oclExpression) ~
     (ELSE ~> oclExpression) <~ ENDIF
@@ -212,6 +223,6 @@ trait OclParsers extends Parsers with ParserHelpers {
   //// HELPERS
 
   protected implicit def keyName(what: String): Parser[String] = acceptMatch(what, {
-    case n: SysMLLexer.SimpleName if n.chars == what => what
+    case n: OclTokens.SimpleName if n.chars == what => what
   })
 }

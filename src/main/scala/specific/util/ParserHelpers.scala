@@ -12,3 +12,4 @@ trait ParserHelpers { self: Parsers =>
   protected def named[T](name: String, p: Parser[T]): Parser[T] =
     p | Parser(i => Failure(s"expected $name but found ${i.first.toString}", i))
 }
+

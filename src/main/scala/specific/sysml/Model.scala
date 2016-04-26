@@ -16,14 +16,14 @@ case class Package(name: String, blocks: Seq[Block], subpackages: Seq[Package]) 
 
 sealed trait Type
 
-case class Block(override val name: String, compartments: Seq[BlockCompartment]) extends Classifier(name) {
+case class Block(rawName: String, compartments: Seq[BlockCompartment]) extends Classifier(rawName) {
   override def toString = s"<<block>> $name\n${indent(compartments.mkString("\n"))}"
 }
 case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
   override def toString = s": $name$multiplicity"
 }
 
-case class UnprocessedConstraint(content: String) extends BlockMember
+case class UnprocessedConstraint(content: Any) extends BlockMember
 
 sealed abstract class BlockCompartment(val compartmentName: String, content: Seq[BlockMember]) {
   override def toString = s"<<compartment>> $compartmentName\n${indent(content.mkString("\n"))}"
