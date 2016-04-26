@@ -7,11 +7,10 @@ trait MultiplicityElement {
 case class Multiplicity(
   isOrdered: Boolean = false,
   isUnique: Boolean = true,
-  lower: Int = 0,
-  upper: Option[Int] = Some(1)
+  lower: BigInt,
+  upper: UnlimitedNatural = UnlimitedNatural.Finite(1)
 ) {
   require(lower >= 0, "negative lower bound")
-  require(upper.forall(_ >= 0), "negative upper bound")
 
   /** @see UML Spec 15-03-01 - Table 7.1 */
   def collectionType =
@@ -23,9 +22,9 @@ case class Multiplicity(
   }
 
   def boundsString = (lower,upper) match {
-    case (0,Some(1)) => None
-    case (0,None) => Some("*")
-    case (n,None) => Some(s"$n..*")
+    case (x,UnlimitedNatural.Finite(y)) if x == 0 && y == 1 => None
+    case (x,UnlimitedNatural.Infinity) if x == 0 => Some("*")
+    case (n,UnlimitedNatural.Infinity) => Some(s"$n..*")
     case (n,m) if (n == m) => Some(s"$n")
     case (n,m) => Some(s"$n..$m")
   }

@@ -1,13 +1,19 @@
 package specific.sysml.parser
 
+import specific.ocl.parser.OclTokens
+
 import scala.collection.SortedSet
 import scala.util.parsing.combinator.token.Tokens
 
 /**
   * Created by martin on 18.04.16.
   */
-trait SysMLTokens extends OCLTokens { self: Tokens =>
+object SysMLTokens {
+  type Token = OclTokens.Token
+  type Delimiter = OclTokens.Delimiter
+
   sealed trait Indentation extends Token { val n: Int; val chars = "" }
+
   object Indentation {
     case object None extends Indentation { val n = 0 }
     case class Tabs(n: Int) extends Indentation {
@@ -41,28 +47,12 @@ trait SysMLTokens extends OCLTokens { self: Tokens =>
     }
   }
 
-  case class Name(chars: String) extends Token {
-    override def toString = s""""$chars""""
-  }
-
-  case class Number(value: Int) extends Token { def chars = value.toString }
-
-  val delimiters = SortedSet[Delimiter](
-    LEFT_PARENS,RIGHT_PARENS, LEFT_SQUARE_BRACKET, RIGHT_SQUARE_BRACKET,
-    LEFT_BRACE,RIGHT_BRACE,
-    COLON,RIGHT_ARROW,LEFT_ARROW,PLUS,MINUS,HASH,TILDE,
-    SLASH,COMMA,STAR,ELIPSIS,DOT
+  val delimiters = OclTokens.delimiters ++ SortedSet[Delimiter](
+    ELIPSIS, HASH, LEFT_ARROW, TILDE
   ) (Ordering.by[Delimiter,(Int,String)](k => (k.chars.length, k.chars)).reverse)
 
-  //case class Constraint(chars: String) extends Token
-
-  case object LEFT_BRACE extends Delimiter("{")
-  case object RIGHT_BRACE extends Delimiter("}")
-  case object COLON extends Delimiter(":")
-  case object LEFT_ARROW extends Delimiter("<-")
-  case object HASH extends Delimiter("#")
-  case object TILDE extends Delimiter("~")
-  case object COMMA extends Delimiter(",")
   case object ELIPSIS extends Delimiter("..")
-  case object DOT extends Delimiter(".")
+  case object HASH extends Delimiter("#")
+  case object LEFT_ARROW extends Delimiter("<-")
+  case object TILDE extends Delimiter("~")
 }

@@ -2,22 +2,24 @@ package specific.sysml.parser
 
 import java.util.concurrent.TimeUnit
 
-import specific.uml
-import specific.ocl
+import specific.{ocl, uml}
 import specific.ocl.CollectionKind
+import specific.ocl.parser.{OclLexer, OclParsers, OclTokens}
 import specific.sysml._
-import specific.sysml.parser.Lexer._
+import specific.sysml.parser.SysMLLexer._
 import specific.uml.Types.Classifier
-import specific.uml.{PathName, SimpleName}
+import specific.uml.{PathName, SimpleName, UnlimitedNatural}
 
 import scala.util.parsing.combinator.Parsers
-import scala.concurrent.duration.{Duration, DurationInt, TimeUnit}
+import scala.concurrent.duration.{Duration, TimeUnit}
 
 /**
   * Created by martin on 19.04.16.
   */
-object Parser extends Parsers {
-  override type Elem = Lexer.Token
+object SysMLParsers extends OclParsers {
+  override type Elem = OclLexer.Token
+  import specific.ocl.parser.OclTokens._
+  import SysMLTokens._
 
   def pkg: Parser[Package] = PACKAGE ~> name ~ separated(block | constraint) ^^ { case n~bs => Package(n,bs.collect{ case b: Block => b},Nil) }
 
@@ -25,21 +27,25 @@ object Parser extends Parsers {
 
   def block: Parser[Block] = "block" ~> name ~ indented(compartment,"compartment") ^^ { case n~cs => Block(n,cs) }
 
-  def compartment: Parser[BlockCompartment] =
-  ( referencesCompartment
+  def compartment: Parser[BlockCompartment] = named("compartment",
+    behaviorsCompartment
+  | namespaceCompartment
+  | referencesCompartment
   | operationsCompartment
   | propertiesCompartment
   | valuesCompartment
   | portsCompartment
-  | behaviorsCompartment
-  | constraintsCompartment
-  | failure("expected compartment declaration"))
+  | constraintsCompartment)
+
+  def behaviorsCompartment: Parser[BehaviorCompartment] =
+    ("owned" ~ "behaviors" |
+      "classifier" ~ "bahavior") ~> indented(stateMachine, "state machine") ^^ (BehaviorCompartment)
+
+  def namespaceCompartment: Parser[Nothing] =
+    "namespace" ~! err("namespace compartments are currently unsupported") ^^ (_ => sys.error("unsupported compartment type"))
 
   def constraintsCompartment: Parser[ConstraintsCompartment] =
     "constraints" ~> indented(constraint, "constraint") ^^ (ConstraintsCompartment)
-
-  def behaviorsCompartment: Parser[BehaviorCompartment] =
-    ("owned" ~ "behaviors") ~> indented(stateMachine, "state machine") ^^ (BehaviorCompartment)
 
   def stateMachine: Parser[StateMachine] =
     ("state" ~ "machine") ~> opt(name) ~ indented(state, "state") ^^ { case n~ss => StateMachine(n,ss) }
@@ -62,7 +68,7 @@ object Parser extends Parsers {
   ( "after" ~> duration ^^ Timeout
   | "receive" ~> name ~ opt(LEFT_PARENS ~> (name <~ RIGHT_PARENS)) ^^ { case p~v => Receive(p,v)} )
 
-  def duration: Parser[Duration] = num ~ timeUnit ^^ { case i ~ n => Duration(i,n).toCoarsest }
+  def duration: Parser[Duration] = integer ~ timeUnit ^^ { case i ~ n => Duration(i.toLong,n).toCoarsest }
 
   def timeUnit: Parser[TimeUnit] =
   ( ("d" | "day" | "days") ^^^ TimeUnit.DAYS
@@ -110,9 +116,11 @@ object Parser extends Parsers {
   def operationsCompartment: Parser[OperationsCompartment] =
     "operations" ~> indented(operation, "operation") ^^ (OperationsCompartment)
 
+  val defaultMultiplicity = Multiplicity(UnlimitedNatural.Finite(0), UnlimitedNatural.Finite(1))
+
   def operation: Parser[Operation] =
     name ~ parameterList ~ opt(named("return type", typing)) ~ constraint.* ~ opt(indented(constraint,"constraint")) ^^ {
-      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name,tpe.getOrElse(TypeAnnotation(uml.ResolvedName(ocl.Types.VoidType), Multiplicity.default)),ps,cs1 ++ cs2.getOrElse(Nil))
+      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name,tpe.getOrElse(TypeAnnotation(uml.ResolvedName(ocl.Types.VoidType), defaultMultiplicity)),ps,cs1 ++ cs2.getOrElse(Nil))
     }
 
   def parameterList: Parser[Seq[Parameter]] =
@@ -139,82 +147,38 @@ object Parser extends Parsers {
     ( "unique" ^^^ true
     | "nonunique" ^^^ false )
 
-  def multiplicityRange: Parser[(MultiplicityBound,MultiplicityBound)] =
-    ( multiplicityBound ~ ( ELIPSIS ~> multiplicityBound) ^^ { case l~u => (l,u) }
-    | multiplicityBound ^^ {
-      case Many => (N(0),Many)
+  def multiplicityRange: Parser[(UnlimitedNatural,UnlimitedNatural)] =
+    ( unlimitedNatural ~ ( ELIPSIS ~> unlimitedNatural) ^^ { case l~u => (l,u) }
+    | unlimitedNatural ^^ {
+      case UnlimitedNatural.Infinity =>
+        (UnlimitedNatural.Finite(0),UnlimitedNatural.Infinity)
       case n => (n,n)
     })
 
-  def multiplicityBound: Parser[MultiplicityBound] =
-    num ^^ N | STAR ^^^ Many
-
-  def pathName =
-    ( simpleName
-    | simpleName ~ ("::" ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ PathName)
-
-  def typeExp: Parser[uml.Name] = pathName | primitiveType | oclType | collectionType ^^ uml.ResolvedName[Classifier]
-
-  def primitiveType: Parser[uml.ResolvedName[Classifier]] =
-    ( "Boolean" ^^^ uml.Types.Boolean
-    | "Integer" ^^^ uml.Types.Integer
-    | "Real" ^^^ uml.Types.Real
-    | "String" ^^^ uml.Types.String
-    | "UnlimitedNatural" ^^^ uml.Types.UnlimitedNatural) ^^ uml.ResolvedName[Classifier]
-
-  def oclType: Parser[uml.ResolvedName[Classifier]] =
-    ( "OclAny" ^^^ ocl.Types.AnyType
-    | "OclInvalid" ^^^ ocl.Types.InvalidType
-    | "OclMessage" ~! err("OclMessage is currently not supported") ^^^ ocl.Types.InvalidType
-    | "OclVoid" ^^^ ocl.Types.VoidType)  ^^ uml.ResolvedName[Classifier]
-
-  def collectionType: Parser[ocl.Types.CollectionType] =
-    collectionTypeIdentifier ~ enclosed(LEFT_PARENS, typeExp, RIGHT_PARENS) ^^ { case k~t => ocl.Types.collection(k,t) }
-
-  def collectionTypeIdentifier: Parser[CollectionKind] =
-    ( "Set" ^^^ CollectionKind.Set
-    | "Bag" ^^^ CollectionKind.Bag
-    | "Sequence" ^^^ CollectionKind.Sequence
-    | "Collection" ^^^ CollectionKind.Collection
-    | "OrderedSet" ^^^ CollectionKind.OrderedSet )
+  def unlimitedNatural: Parser[UnlimitedNatural] =
+    ( integer ^^ UnlimitedNatural.Finite
+    | STAR ^^^ UnlimitedNatural.Infinity )
 
   def typing: Parser[TypeAnnotation] =
     named("type signature", COLON ~> typeExp ~ opt(multiplicity)) ^^ {
-      case nps~mult => TypeAnnotation(nps, mult.getOrElse(Multiplicity.default))
+      case nps~mult => TypeAnnotation(nps, mult.getOrElse(defaultMultiplicity))
     }
 
   def constraint: Parser[UnprocessedConstraint] = LEFT_BRACE ~! ( rep(elem("constraint content",_ != RIGHT_BRACE)) <~ RIGHT_BRACE ) ^^ {
     case _~cs => UnprocessedConstraint(cs.toString)
   }
 
-  implicit def keyName(what: String): Parser[String] = acceptMatch(what, {
-    case n: Name if n.chars == what => what
-  })
-
-  def simpleName: Parser[SimpleName] = acceptMatch("ocl simple name", {
-    case Name(cs) if !oclReserved.contains(cs) => SimpleName(cs)
-  })
-
-  def unreservedSimpleName: Parser[SimpleName] = acceptMatch("ocl simple name", {
-    case Name(cs) => SimpleName(cs)
-  })
-
   def name: Parser[String] = acceptMatch("identifier", {
-    case n: Name => n.chars
+    case n: OclTokens.SimpleName => n.chars
   })
 
-  def num: Parser[Int] = acceptMatch("identifier", {
-    case n: Number => n.value
+  def integer: Parser[BigInt] = acceptMatch("identifier", {
+    case n: IntegerLiteral => n.value
   })
 
-  def enclosed[T](left: Parser[_], middle: Parser[T], right: Parser[_]): Parser[T] =
-    left ~> (middle <~ right)
+  protected def separated[T](exprs: Parser[T]): Parser[Seq[T]] =
+    SEPARATOR.* ~> (repsep(exprs,SEPARATOR.+) <~ SEPARATOR.*)
 
-  def named[T](name: String, p: Parser[T]): Parser[T] = p | Parser(i => Failure(s"expected $name but found ${i.first.toString}", i))
-
-  def separated[T](exprs: Parser[T]): Parser[Seq[T]] = SEPARATOR.* ~> (repsep(exprs,SEPARATOR.+) <~ SEPARATOR.*)
-
-  def indented[T](exprs: Parser[T], what: String): Parser[Seq[T]] = enclosed(INDENT, separated(exprs), DEDENT) | success(Seq.empty)
-
-  //implicit def elem(e: Lexer.Token): Parser[Any] = accept(e)
+  protected def indented[T](exprs: Parser[T], what: String): Parser[Seq[T]] =
+    enclosed(INDENT, separated(exprs), DEDENT) | success(Seq.empty)
 }

@@ -126,11 +126,11 @@ object Test extends App {
       |  post off_red_post: self.red = false
       |}""".stripMargin
 
-  var tokens: Reader[Lexer.Token] = new IndentScanner(new Lexer.Scanner(input))
+  var tokens: Reader[SysMLLexer.Token] = new IndentScanner(new SysMLLexer.Scanner(input))
 
-  Parser.phrase(Parser.pkg)(tokens) match {
-    case Parser.Success(b,_) => println(b)
-    case Parser.NoSuccess(msg,i) =>
+  SysMLParsers.phrase(SysMLParsers.pkg)(tokens) match {
+    case SysMLParsers.Success(b,_) => println(b)
+    case SysMLParsers.NoSuccess(msg,i) =>
       println(s"$msg [${i.pos}]:\n${i.pos.longString}")
   }
 

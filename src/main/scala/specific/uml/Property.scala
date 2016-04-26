@@ -3,7 +3,6 @@ package specific.uml
 import specific.sysml.UnprocessedConstraint
 
 trait Property extends NamedElement with MultiplicityElement {
-  val visibility: VisibilityKind
   val isDerived: Boolean
   val typeName: Name
 }

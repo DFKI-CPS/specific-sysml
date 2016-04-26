@@ -1,10 +1,12 @@
 package specific.ocl
 
+import specific.uml
 import specific.uml.Types.Classifier
 
 object Expressions {
 
   sealed trait OclExpression
+
 
   /**
     * An IfExp results in one of two alternative expressions depending on the evaluated value of a condition. Note that both the
@@ -41,6 +43,6 @@ object Expressions {
 
   // MISSING: EnumLiteralExp
 
-  case class VariableDeclaration(name: String, tpe: Option[Classifier])
+  case class VariableDeclaration(name: String, tpe: Option[uml.Name])
 
 }
