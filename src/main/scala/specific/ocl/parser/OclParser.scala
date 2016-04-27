@@ -2,7 +2,7 @@ package specific.ocl.parser
 
 import specific.ocl.CollectionKind
 import specific.ocl.Expressions.VariableDeclaration
-import specific.sysml.{Name, PathName, ResolvedName, Types}
+import specific.sysml.{Name, NamedElement, PathName, Types, ResolvedName}
 import specific.sysml.parser.SysMLLexer
 import specific.{ocl, sysml}
 import Types.Classifier
@@ -34,7 +34,7 @@ trait OclParsers extends Parsers with ParserHelpers {
   def variableExp: Parser[Any] =
     simpleName | SELF
 
-  def simpleName = acceptMatch("simple name", {
+  def simpleName[T <: NamedElement]: Parser[sysml.SimpleName[T]] = acceptMatch("simple name", {
     case s: OclTokens.SimpleName if !s.isReserved => sysml.SimpleName(s.chars)
   })
 
@@ -46,9 +46,9 @@ trait OclParsers extends Parsers with ParserHelpers {
     case s: OclTokens.SimpleName => sysml.SimpleName(s.chars)
   })
 
-  def pathName: Parser[Name] =
-    ( simpleName ~ (DOUBLE_COLON ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ (_.map(_.name)) ^^ PathName
-    | simpleName )
+  def pathName[T <: NamedElement]: Parser[Name[T]] =
+    ( simpleName[T] ~ (DOUBLE_COLON ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ (_.map(_.name)) ^^ PathName[T]
+    | simpleName[T] )
 
   def literalExp: Parser[Any] =
     ( enumLiteralExp
@@ -123,12 +123,12 @@ trait OclParsers extends Parsers with ParserHelpers {
       RIGHT_PARENS))
 
   def variableDeclaration: Parser[VariableDeclaration] =
-    simpleName ~ opt(COLON ~> typeExp) ^^ { //~ opt(EQUALS ~> oclExpression)
+    simpleName[NamedElement] ~ opt(COLON ~> typeExp) ^^ { //~ opt(EQUALS ~> oclExpression)
       case name ~ tpe => VariableDeclaration(name.name,tpe)
     }
 
-  def typeExp: Parser[Name] =
-    ( pathName
+  def typeExp: Parser[Name[Classifier]] =
+    ( pathName[Classifier]
     | collectionType
     | tupleType
     | primitiveType

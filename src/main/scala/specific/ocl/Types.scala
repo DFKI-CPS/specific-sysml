@@ -46,7 +46,7 @@ object Types {
     * restriction on the element type of a collection type. This means in particular that a collection type may be parameterized
     * with other collection types allowing collections to be nested arbitrarily deep.
     */
-  sealed class CollectionType(name: String = "Collection", val elementType: Name) extends DataType(name)
+  sealed class CollectionType(name: String = "Collection", val elementType: Name[Classifier]) extends DataType(name)
 
   /**
     * OrderedSetType is a collection type that describes a set of elements where each distinct element occurs only once in the
@@ -55,7 +55,7 @@ object Types {
     *
     * @param elementType The type of the elements in a collection. All elements in a collection must conform to this type.
     */
-  case class OrderedSetType(override val elementType: Name) extends CollectionType("OrderedSetType", elementType)
+  case class OrderedSetType(override val elementType: Name[Classifier]) extends CollectionType("OrderedSetType", elementType)
 
   /**
     * SequenceType is a collection type that describes a list of elements where each element may occur multiple times in the
@@ -64,7 +64,7 @@ object Types {
     *
     * @param elementType The type of the elements in a collection. All elements in a collection must conform to this type.
     */
-  case class SequenceType(override val elementType: Name) extends CollectionType("SequenceType", elementType)
+  case class SequenceType(override val elementType: Name[Classifier]) extends CollectionType("SequenceType", elementType)
 
   /**
     * BagType is a collection type that describes a multiset of elements where each element may occur multiple times in the
@@ -72,7 +72,7 @@ object Types {
     *
     * @param elementType The type of the elements in a collection. All elements in a collection must conform to this type.
     */
-  case class BagType(override val elementType: Name) extends CollectionType("BagType", elementType)
+  case class BagType(override val elementType: Name[Classifier]) extends CollectionType("BagType", elementType)
 
   /**
     * SetType is a collection type that describes a set of elements where each distinct element occurs only once in the set. The
@@ -80,9 +80,9 @@ object Types {
     *
     * @param elementType The type of the elements in a collection. All elements in a collection must conform to this type.
     */
-  case class SetType(override val elementType: Name) extends CollectionType("SetType", elementType)
+  case class SetType(override val elementType: Name[Classifier]) extends CollectionType("SetType", elementType)
 
-  def collection(kind: CollectionKind, elementType: Name): CollectionType = kind match {
+  def collection(kind: CollectionKind, elementType: Name[Classifier]): CollectionType = kind match {
     case CollectionKind.OrderedSet => OrderedSetType(elementType)
     case CollectionKind.Bag => BagType(elementType)
     case CollectionKind.Collection => new CollectionType("Collection", elementType)

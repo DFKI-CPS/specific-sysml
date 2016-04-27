@@ -43,6 +43,6 @@ object Expressions {
 
   // MISSING: EnumLiteralExp
 
-  case class VariableDeclaration(name: String, tpe: Option[Name])
+  case class VariableDeclaration(name: String, tpe: Option[Name[Classifier]])
 
 }

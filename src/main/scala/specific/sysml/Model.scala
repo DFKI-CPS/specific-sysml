@@ -30,7 +30,7 @@ object DiagramKind {
 
 sealed trait DiagramContent[T <: DiagramKind]
 
-case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name, diagramName: String, content: Seq[Element]) {
+case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name[NamedElement], diagramName: String, content: Seq[Element]) {
   override def toString = s"$diagramKind [$modelElementType] $modelElementName [$diagramName]\n" + indent(content.mkString("\n"))
 }
 
@@ -44,7 +44,7 @@ case class Block(rawName: String, compartments: Seq[BlockCompartment], comments:
   override def toString = s"<<block>> $name\n${indent(compartments.mkString("\n"))}"
   def members = compartments.flatMap(_.content)
 }
-case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
+case class TypeAnnotation(name: Name[Classifier], multiplicity: Multiplicity) {
   override def toString = s": $name$multiplicity"
 }
 
