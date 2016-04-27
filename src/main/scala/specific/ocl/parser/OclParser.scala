@@ -2,10 +2,10 @@ package specific.ocl.parser
 
 import specific.ocl.CollectionKind
 import specific.ocl.Expressions.VariableDeclaration
+import specific.sysml.{Name, PathName, ResolvedName, Types}
 import specific.sysml.parser.SysMLLexer
-import specific.{ocl, uml}
-import specific.uml.Types.Classifier
-import specific.uml.{Name, PathName, Types}
+import specific.{ocl, sysml}
+import Types.Classifier
 import specific.util.ParserHelpers
 
 import scala.util.parsing.combinator.Parsers
@@ -35,20 +35,20 @@ trait OclParsers extends Parsers with ParserHelpers {
     simpleName | SELF
 
   def simpleName = acceptMatch("simple name", {
-    case s: OclTokens.SimpleName if !s.isReserved => specific.uml.SimpleName(s.chars)
+    case s: OclTokens.SimpleName if !s.isReserved => sysml.SimpleName(s.chars)
   })
 
   def restrictedKeyword = acceptMatch("restricted keyword", {
-    case s: OclTokens.SimpleName if s.isReserved => specific.uml.SimpleName(s.chars)
+    case s: OclTokens.SimpleName if s.isReserved => sysml.SimpleName(s.chars)
   })
 
   def unreservedSimpleName = acceptMatch("unreserved simple name", {
-    case s: OclTokens.SimpleName => specific.uml.SimpleName(s.chars)
+    case s: OclTokens.SimpleName => sysml.SimpleName(s.chars)
   })
 
   def pathName: Parser[Name] =
-    ( simpleName
-    | simpleName ~ (DOUBLE_COLON ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ PathName )
+    ( simpleName ~ (DOUBLE_COLON ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ (_.map(_.name)) ^^ PathName
+    | simpleName )
 
   def literalExp: Parser[Any] =
     ( enumLiteralExp
@@ -134,26 +134,26 @@ trait OclParsers extends Parsers with ParserHelpers {
     | primitiveType
     | oclType )
 
-  def primitiveType: Parser[uml.ResolvedName[Classifier]] =
-    ( "Boolean" ^^^ uml.Types.Boolean
-    | "Integer" ^^^ uml.Types.Integer
-    | "Real" ^^^ uml.Types.Real
-    | "String" ^^^ uml.Types.String
-    | "UnlimitedNatural" ^^^ uml.Types.UnlimitedNatural) ^^ uml.ResolvedName[Classifier]
+  def primitiveType: Parser[ResolvedName[Classifier]] =
+    ( "Boolean" ^^^ sysml.Types.Boolean
+    | "Integer" ^^^ sysml.Types.Integer
+    | "Real" ^^^ sysml.Types.Real
+    | "String" ^^^ sysml.Types.String
+    | "UnlimitedNatural" ^^^ sysml.Types.UnlimitedNatural) ^^ sysml.ResolvedName[Classifier]
 
-  def oclType: Parser[uml.ResolvedName[Classifier]] =
+  def oclType: Parser[ResolvedName[Classifier]] =
     ( "OclAny" ^^^ ocl.Types.AnyType
     | "OclInvalid" ^^^ ocl.Types.InvalidType
     | "OclMessage" ~! err("OclMessage is currently not supported") ^^^ ocl.Types.InvalidType
-    | "OclVoid" ^^^ ocl.Types.VoidType)  ^^ uml.ResolvedName[Classifier]
+    | "OclVoid" ^^^ ocl.Types.VoidType)  ^^ sysml.ResolvedName[Classifier]
 
-  def collectionType: Parser[uml.ResolvedName[Classifier]] =
+  def collectionType: Parser[ResolvedName[Classifier]] =
     collectionTypeIdentifier ~ enclosed(LEFT_PARENS, typeExp, RIGHT_PARENS) ^^ {
-      case ct ~ t => uml.ResolvedName(ocl.Types.collection(ct,t))
+      case ct ~ t => sysml.ResolvedName(ocl.Types.collection(ct,t))
     }
 
-  def tupleType: Parser[uml.ResolvedName[Classifier]] =
-    "Tuple" ~> enclosed(LEFT_PARENS, variableDeclarationList, RIGHT_PARENS) ^^ ocl.Types.TupleType ^^ uml.ResolvedName[Classifier]
+  def tupleType: Parser[ResolvedName[Classifier]] =
+    "Tuple" ~> enclosed(LEFT_PARENS, variableDeclarationList, RIGHT_PARENS) ^^ ocl.Types.TupleType ^^ sysml.ResolvedName[Classifier]
 
   def variableDeclarationList: Parser[Seq[VariableDeclaration]] =
     rep1sep(variableDeclaration, COMMA)
@@ -225,4 +225,6 @@ trait OclParsers extends Parsers with ParserHelpers {
   protected implicit def keyName(what: String): Parser[String] = acceptMatch(what, {
     case n: OclTokens.SimpleName if n.chars == what => what
   })
+
+  protected implicit def keyName2(what: String): ParserExts[String] = ParserExts(keyName(what))
 }

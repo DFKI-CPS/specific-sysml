@@ -1,7 +1,7 @@
 package specific.ocl
 
-import specific.uml
-import specific.uml.Types.Classifier
+import specific.sysml.Types.Classifier
+import specific.sysml.{Name, Types}
 
 object Expressions {
 
@@ -43,6 +43,6 @@ object Expressions {
 
   // MISSING: EnumLiteralExp
 
-  case class VariableDeclaration(name: String, tpe: Option[uml.Name])
+  case class VariableDeclaration(name: String, tpe: Option[Name])
 
 }

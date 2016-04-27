@@ -11,7 +11,7 @@ object SysMLLexer extends OclLexer {
 
   override val delimiters = SysMLTokens.delimiters
 
-  override def token = indentation | super.token
+  override def token = indentation | sysmlComment | super.token
 
   def lineBreak = ( '\r' ~ '\n' | '\n' | '\r' )
 
@@ -19,6 +19,10 @@ object SysMLLexer extends OclLexer {
   ( count1(' ') <~ noTabs ^^ Indentation.Spaces
   | count1('\t') <~ noSpaces ^^ Indentation.Tabs
   | success(Indentation.None) ) ^^ (_._2))
+
+  override def comment = not('/' ~ '*' ~ '*') ~> super.comment
+
+  def sysmlComment = ('/' ~ '*' ~ '*') ~!> blockComment("", 0) ^^ (_.trim) ^^ SysmlComment
 
   def noTabs =
     success() ~! (

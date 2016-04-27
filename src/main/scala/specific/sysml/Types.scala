@@ -1,4 +1,5 @@
-package specific.uml
+package specific.sysml
+
 
 trait TypedElement {
   val typing: Type
@@ -39,7 +40,7 @@ object Types {
     * used whenever the range is specified to have no upper bound.
     */
   case object UnlimitedNatural extends
-    PrimitiveType[specific.uml.UnlimitedNatural]("UnlimitedNatural")
+    PrimitiveType[UnlimitedNatural]("UnlimitedNatural")
 
   /**
     * An instance of Real is a value in the (infinite) set of real numbers.

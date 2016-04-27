@@ -1,11 +1,4 @@
-package specific.uml
-
-import specific.sysml.UnprocessedConstraint
-
-trait Property extends NamedElement with MultiplicityElement {
-  val isDerived: Boolean
-  val typeName: Name
-}
+package specific.sysml
 
 sealed trait PropertyModifier
 object PropertyModifier {

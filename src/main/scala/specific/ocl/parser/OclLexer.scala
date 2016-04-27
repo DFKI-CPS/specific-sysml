@@ -1,5 +1,7 @@
 package specific.ocl.parser
 
+import specific.util.ParserHelpers
+
 import scala.collection.SortedSet
 import scala.collection.immutable.NumericRange
 import scala.util.parsing.combinator.lexical.Lexical
@@ -11,7 +13,7 @@ object OclLexer extends OclLexer
 /**
   * Created by martin on 25.04.16.
   */
-trait OclLexer extends Lexical {
+trait OclLexer extends Lexical with ParserHelpers {
   type Token = OclTokens.Token
   import OclTokens._
 
@@ -107,14 +109,15 @@ trait OclLexer extends Lexical {
 
   def comment = named("comment",
     ( '-' ~ '-' ~! (allExcept(EofCh, '\n')* )
-    | '/' ~ '*' ~! blockComment(1) ))
+    | '/' ~ '*' ~! blockComment("",1) ))
 
-  def blockComment(level: Int): Parser[Any] = named("blockComment",
-    ( '/' ~ '*' ~! blockComment(level + 1)
-    | '/' ~! blockComment(level)
-    | '*' ~ '/' ~! (if (level > 1) blockComment(level - 1) else success())
-    | '*' ~! blockComment(level)
-    | (allExcept('*', '/') *) ) )
+  def blockComment(text: String, level: Int): Parser[String] = named("blockComment",
+    ( ('/' ~ '*') ~!> blockComment(text, level + 1)
+    | '/' ~! blockComment(text + "/", level) ^^ (_._2)
+    | ('*' ~ '/') ~!> (if (level > 1) blockComment(text, level - 1) else success(text))
+    | '*' ~! blockComment(text, level) ^^ (_._2)
+    | allExcept('*', '/').* >> (text2 => blockComment(text + text2.mkString, level)) )
+  )
 
   //// HELPERS
 
@@ -126,10 +129,4 @@ trait OclLexer extends Lexical {
   def concat = (x: Seq[String]) => x.reduce(_ + _)
 
   def mkString = (x: Seq[Char]) => x.mkString
-
-  def allExcept(cs: Char*) =
-    elem(s"none of (${cs.mkString(", ")})", !cs.contains(_))
-
-  def named[T](name: String, p: Parser[T]): Parser[T] =
-    p | Parser(i => Failure(s"expected $name but found ${i.first.toString}", i))
 }

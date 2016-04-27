@@ -1,8 +1,8 @@
 package specific.ocl
 
 import specific.ocl.Expressions.VariableDeclaration
-import specific.uml.Name
-import specific.uml.Types._
+import specific.sysml.{Name, Types}
+import specific.sysml.Types.{Classifier, DataType}
 
 /**
   * Created by martin on 22.04.16.

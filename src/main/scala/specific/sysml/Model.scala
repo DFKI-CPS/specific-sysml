@@ -1,7 +1,7 @@
 package specific.sysml
 
-import specific.uml.{Name, UnlimitedNatural}
-import specific.uml.Types.Classifier
+import Types.Classifier
+import org.eclipse.papyrus.sysml.portandflows.FlowDirection
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -10,14 +10,39 @@ object indent {
   def apply(lines: String) = lines.lines.map("  " + _).mkString("\n")
 }
 
-case class Package(name: String, blocks: Seq[Block], subpackages: Seq[Package]) {
+sealed abstract class DiagramKind(abbrev: String) {
+  override def toString = abbrev
+}
+
+case class Comment(content: String) extends Element
+
+object DiagramKind {
+  case object ActivityDiagram extends DiagramKind("act")
+  case object BlockDefinitionDiagram extends DiagramKind("bdd")
+  case object InternalBlockDiagram extends DiagramKind("ibd")
+  case object PackageDiagram extends DiagramKind("pkg")
+  case object ParametricDiagram extends DiagramKind("par")
+  case object RequirementDiagram extends DiagramKind("req")
+  case object SequenceDiagram extends DiagramKind("seq")
+  case object StateMachineDiagram extends DiagramKind("stm")
+  case object UseCaseDiagram extends DiagramKind("uc")
+}
+
+sealed trait DiagramContent[T <: DiagramKind]
+
+case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name, diagramName: String, content: Seq[Element]) {
+  override def toString = s"$diagramKind [$modelElementType] $modelElementName [$diagramName]\n" + indent(content.mkString("\n"))
+}
+
+case class Package(name: String, blocks: Seq[Block], constraints: Seq[UnprocessedConstraint], subpackages: Seq[Package]) {
   override def toString = s"<<package>> $name\n\n${blocks.mkString("\n\n")}"
 }
 
-sealed trait Type
+trait Type
 
-case class Block(rawName: String, compartments: Seq[BlockCompartment]) extends Classifier(rawName) {
+case class Block(rawName: String, compartments: Seq[BlockCompartment], comments: Seq[Comment]) extends Classifier(rawName) with DiagramContent[DiagramKind.BlockDefinitionDiagram.type] {
   override def toString = s"<<block>> $name\n${indent(compartments.mkString("\n"))}"
+  def members = compartments.flatMap(_.content)
 }
 case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
   override def toString = s": $name$multiplicity"
@@ -25,8 +50,11 @@ case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
 
 case class UnprocessedConstraint(content: Any) extends BlockMember
 
-sealed abstract class BlockCompartment(val compartmentName: String, content: Seq[BlockMember]) {
+sealed abstract class BlockCompartment(val compartmentName: String, val content: Seq[BlockMember]) {
   override def toString = s"<<compartment>> $compartmentName\n${indent(content.mkString("\n"))}"
+}
+case class UnsupportedCompartment(name: String) extends BlockCompartment(name, Nil) {
+  override def toString = s"<<compartment>> $name { unsupported! }"
 }
 case class PropertiesCompartment(properties: Seq[Property]) extends BlockCompartment("properties", properties)
 case class ValuesCompartment(properties: Seq[Value]) extends BlockCompartment("values", properties)
@@ -36,28 +64,7 @@ case class PortsCompartment(ports: Seq[Port]) extends BlockCompartment("ports", 
 case class BehaviorCompartment(stms: Seq[StateMachine]) extends BlockCompartment("owned behaviors", stms)
 case class ConstraintsCompartment(rawConstraints: Seq[UnprocessedConstraint]) extends BlockCompartment("constraints", rawConstraints)
 
-case class Multiplicity(
-   lower: UnlimitedNatural,
-   upper: UnlimitedNatural,
-   ordered: Boolean = false,
-   unique: Boolean = false) {
-  private def orderedConstraint = if (ordered) "ordered" else "unordered"
-  private def uniqueConstraint = if (unique) "unique" else "nonunique"
-  override def toString = s"[$lower..$upper] {$orderedConstraint, $uniqueConstraint}"
-}
-
-sealed trait FlowDirection {
-  override def toString = this match {
-    case In => "in"
-    case Out => "out"
-    case InOut => "inout"
-  }
-}
-case object In extends FlowDirection
-case object Out extends FlowDirection
-case object InOut extends FlowDirection
-
-sealed trait BlockMember
+sealed trait BlockMember extends Element
 
 case class Property(name: String, typeAnnotation: TypeAnnotation, constraint: Option[UnprocessedConstraint]) extends BlockMember
 
@@ -80,7 +87,7 @@ case class Operation(
   override def toString = s"<<operation>> $name(${parameters.mkString})$typeAnnotation"
 }
 
-case class Parameter(name: String, typeAnnotation: TypeAnnotation) {
+case class Parameter(name: String, typeAnnotation: TypeAnnotation) extends Element {
   override def toString = s"<<param>> $name$typeAnnotation"
 }
 

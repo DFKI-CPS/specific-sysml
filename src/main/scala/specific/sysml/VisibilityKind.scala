@@ -1,4 +1,4 @@
-package specific.uml
+package specific.sysml
 
 sealed trait VisibilityKind
 

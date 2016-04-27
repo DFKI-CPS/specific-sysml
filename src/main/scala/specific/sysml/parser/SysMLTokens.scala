@@ -12,6 +12,8 @@ object SysMLTokens {
   type Token = OclTokens.Token
   type Delimiter = OclTokens.Delimiter
 
+  case class SysmlComment(chars: String) extends Token
+
   sealed trait Indentation extends Token { val n: Int; val chars = "" }
 
   object Indentation {

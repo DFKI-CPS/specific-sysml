@@ -2,47 +2,70 @@ package specific.sysml.parser
 
 import java.util.concurrent.TimeUnit
 
-import specific.{ocl, uml}
-import specific.ocl.CollectionKind
+import org.eclipse.papyrus.sysml.portandflows.FlowDirection
+import specific.ocl
 import specific.ocl.parser.{OclLexer, OclParsers, OclTokens}
-import specific.sysml._
-import specific.sysml.parser.SysMLLexer._
-import specific.uml.Types.Classifier
-import specific.uml.{PathName, SimpleName, UnlimitedNatural}
+import specific.sysml.{UnlimitedNatural, _}
 
-import scala.util.parsing.combinator.Parsers
 import scala.concurrent.duration.{Duration, TimeUnit}
+import specific.util._
 
 /**
   * Created by martin on 19.04.16.
   */
 object SysMLParsers extends OclParsers {
   override type Elem = OclLexer.Token
+
   import specific.ocl.parser.OclTokens._
   import SysMLTokens._
 
-  def pkg: Parser[Package] = PACKAGE ~> name ~ separated(block | constraint) ^^ { case n~bs => Package(n,bs.collect{ case b: Block => b},Nil) }
+  def elementType: Parser[String] =
+    "package" | "block" | "state" ~ "machine" ^^^ "state machine"
+
+  def diagramKind: Parser[DiagramKind] = named("diagram kind", {
+    "bdd" ^^^ DiagramKind.BlockDefinitionDiagram
+  })
+
+  def diagramElementParsers(kind: DiagramKind): Parser[Element] = kind match {
+    case DiagramKind.BlockDefinitionDiagram => named("block or constraint", block | constraint)
+  }
+
+  def diagram: Parser[Diagram] =
+    ( diagramKind ~ enclosed(LEFT_SQUARE_BRACKET,elementType,RIGHT_SQUARE_BRACKET) ~ pathName ~ enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ) >> {
+      case knd ~ tpe ~ en ~ dn => separated(diagramElementParsers(knd)) ^^ (elems => Diagram(knd,tpe,en,dn.mkString(" "),elems))
+    }
+
+  def pkg: Parser[Package] = PACKAGE ~> name ~ separated(block | constraint) ^^ {
+    case n ~ bs => Package(n,bs collect every[Block], bs collect every[UnprocessedConstraint], Nil)
+  }
 
   def content: Parser[Seq[Block]] = separated(block)
 
-  def block: Parser[Block] = "block" ~> name ~ indented(compartment,"compartment") ^^ { case n~cs => Block(n,cs) }
+  def block: Parser[Block] = "block" ~> name ~ indented(comment | compartment,"compartment") ^^ { case n~cs => Block(n,cs collect every [BlockCompartment], cs collect every [Comment]) }
+
+  def comment: Parser[Comment] = acceptMatch("comment", {
+    case SysmlComment(content) => Comment(content)
+  })
 
   def compartment: Parser[BlockCompartment] = named("compartment",
     behaviorsCompartment
-  | namespaceCompartment
   | referencesCompartment
   | operationsCompartment
   | propertiesCompartment
   | valuesCompartment
   | portsCompartment
-  | constraintsCompartment)
+  | constraintsCompartment
+  | commit(unsupportedCompartment) )
+
+  def unsupportedCompartment: Parser[UnsupportedCompartment] =
+    name.+ <~ skip ^^ (ns => UnsupportedCompartment(ns.mkString(" ")))
+
+  def skip: Parser[Any] =
+    INDENT ~ allExcept(INDENT,DEDENT).* ~ opt(skip) ~ allExcept(INDENT,DEDENT).* ~ DEDENT
 
   def behaviorsCompartment: Parser[BehaviorCompartment] =
-    ("owned" ~ "behaviors" |
-      "classifier" ~ "bahavior") ~> indented(stateMachine, "state machine") ^^ (BehaviorCompartment)
-
-  def namespaceCompartment: Parser[Nothing] =
-    "namespace" ~! err("namespace compartments are currently unsupported") ^^ (_ => sys.error("unsupported compartment type"))
+    ( "owned" ~ "behaviors"
+    | "classifier" ~ "bahavior") ~> indented(stateMachine, "state machine") ^^ (BehaviorCompartment)
 
   def constraintsCompartment: Parser[ConstraintsCompartment] =
     "constraints" ~> indented(constraint, "constraint") ^^ (ConstraintsCompartment)
@@ -84,12 +107,12 @@ object SysMLParsers extends OclParsers {
 
   def port: Parser[Port] =
   ( flowDirection ~! name ~ typing ^^ { case dir ~ n ~ t => Port(n,dir,t) }
-  | name ~ typing ^^ { case n ~ t => Port(n,InOut,t) } )
+  | name ~ typing ^^ { case n ~ t => Port(n,FlowDirection.INOUT,t) } )
 
   def flowDirection: Parser[FlowDirection] =
-    ( IN ^^^ In
-    | "out" ^^^ Out
-    | "inout" ^^^ InOut )
+    ( IN ^^^ FlowDirection.IN
+    | "out" ^^^ FlowDirection.OUT
+    | "inout" ^^^ FlowDirection.INOUT )
 
   def propertiesCompartment: Parser[PropertiesCompartment] =
     "properties" ~> indented(property, "property") ^^ (PropertiesCompartment)
@@ -116,11 +139,11 @@ object SysMLParsers extends OclParsers {
   def operationsCompartment: Parser[OperationsCompartment] =
     "operations" ~> indented(operation, "operation") ^^ (OperationsCompartment)
 
-  val defaultMultiplicity = Multiplicity(UnlimitedNatural.Finite(0), UnlimitedNatural.Finite(1))
+  val defaultMultiplicity = Multiplicity(isOrdered = false, isUnique = false, 0, UnlimitedNatural.Finite(1))
 
   def operation: Parser[Operation] =
     name ~ parameterList ~ opt(named("return type", typing)) ~ constraint.* ~ opt(indented(constraint,"constraint")) ^^ {
-      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name,tpe.getOrElse(TypeAnnotation(uml.ResolvedName(ocl.Types.VoidType), defaultMultiplicity)),ps,cs1 ++ cs2.getOrElse(Nil))
+      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name,tpe.getOrElse(TypeAnnotation(ResolvedName(ocl.Types.VoidType), defaultMultiplicity)),ps,cs1 ++ cs2.getOrElse(Nil))
     }
 
   def parameterList: Parser[Seq[Parameter]] =
@@ -135,8 +158,8 @@ object SysMLParsers extends OclParsers {
       enclosed(LEFT_BRACE, orderDesignator ~ opt(COMMA ~> uniquenessDesignator), RIGHT_BRACE) ^^ { case o ~ u => (o,u.getOrElse(false)) }
     | enclosed(LEFT_BRACE, uniquenessDesignator ~ opt(COMMA ~> orderDesignator), RIGHT_BRACE) ^^ { case u ~ o => (o.getOrElse(false),u) })
     ) ^^ {
-      case (lb,ub)~Some((o,u)) => Multiplicity(lb,ub,o,u)
-      case (lb,ub)~None => Multiplicity(lb,ub)
+      case (lb,ub)~Some((o,u)) => Multiplicity(o,u,lb.value,ub)
+      case (lb,ub)~None => Multiplicity(false, false, lb.value,ub)
     }
 
   def orderDesignator: Parser[Boolean] =
@@ -168,17 +191,23 @@ object SysMLParsers extends OclParsers {
     case _~cs => UnprocessedConstraint(cs.toString)
   }
 
-  def name: Parser[String] = acceptMatch("identifier", {
+  def name: Parser[String] = named("identifier", acceptMatch("identifier", {
     case n: OclTokens.SimpleName => n.chars
-  })
+    case k: OclTokens.Keyword => k.chars
+  }))
 
-  def integer: Parser[BigInt] = acceptMatch("identifier", {
+  def integer: Parser[BigInt] = named("identifier", acceptMatch("identifier", {
     case n: IntegerLiteral => n.value
-  })
+  }))
 
   protected def separated[T](exprs: Parser[T]): Parser[Seq[T]] =
     SEPARATOR.* ~> (repsep(exprs,SEPARATOR.+) <~ SEPARATOR.*)
 
   protected def indented[T](exprs: Parser[T], what: String): Parser[Seq[T]] =
     enclosed(INDENT, separated(exprs), DEDENT) | success(Seq.empty)
+
+  override protected implicit def keyName(what: String): Parser[String] = acceptMatch(what, {
+    case n: OclTokens.SimpleName if n.chars == what => what
+    case k: OclTokens.Keyword if k.chars == what => what
+  })
 }
