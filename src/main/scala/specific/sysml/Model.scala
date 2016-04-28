@@ -30,7 +30,8 @@ object DiagramKind {
 
 sealed trait DiagramContent[T <: DiagramKind]
 
-case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name[NamedElement], diagramName: String, content: Seq[Element]) {
+case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name[NamedElement], diagramName: String, content: Seq[Element]) extends NamedElement {
+  val name = Some(diagramName)
   override def toString = s"$diagramKind [$modelElementType] $modelElementName [$diagramName]\n" + indent(content.mkString("\n"))
 }
 
@@ -50,7 +51,7 @@ case class TypeAnnotation(name: Name[Classifier], multiplicity: Multiplicity) {
 
 case class UnprocessedConstraint(content: Any) extends BlockMember
 
-sealed abstract class BlockCompartment(val compartmentName: String, val content: Seq[BlockMember]) {
+sealed abstract class BlockCompartment(val compartmentName: String, val content: Seq[BlockMember]) extends Element {
   override def toString = s"<<compartment>> $compartmentName\n${indent(content.mkString("\n"))}"
 }
 case class UnsupportedCompartment(name: String) extends BlockCompartment(name, Nil) {
@@ -99,15 +100,16 @@ case class StateMachine(name: Option[String], states: Seq[State]) extends BlockM
   override def toString = s"<<state machine>> ${name.getOrElse("<unnamed>")}\n${indent(states.mkString("\n"))}"
 }
 
-sealed trait State
+sealed trait State extends NamedElement
 
-case class ConcreteState(name: String, transitions: Seq[Transition]) extends State {
+case class ConcreteState(name: Option[String], transitions: Seq[Transition]) extends State {
   override def toString = s"<<state>> $name\n${indent(transitions.mkString("\n"))}"
 }
 
 sealed trait PseudoState extends State
 
 case class Choice(transitions: Seq[Transition]) extends PseudoState {
+  val name = None
   override def toString = s"<<choice pseudo state>>\n${indent(transitions.mkString("\n"))}"
 }
 
@@ -115,7 +117,7 @@ case class Transition(
     trigger: Option[Trigger],
     guard: Option[UnprocessedConstraint],
     action: Option[UnprocessedConstraint],
-    target: TransitionTarget) {
+    target: TransitionTarget) extends Element {
   override def toString = s"<<transition>> ${trigger.map(_.toString).getOrElse("")} [${guard.map(_.toString).getOrElse("")}] / ${action.map(_.toString).getOrElse("")} -> $target"
 }
 
@@ -125,7 +127,7 @@ case class InlineTargetState(state: State) extends TransitionTarget {
   override def toString = state.toString
 }
 
-case class UnresolvedTargetStateName(name: String) extends TransitionTarget {
+case class UnresolvedTargetStateName(name: Name[ConcreteState]) extends TransitionTarget {
   override def toString = s"?'$name'"
 }
 

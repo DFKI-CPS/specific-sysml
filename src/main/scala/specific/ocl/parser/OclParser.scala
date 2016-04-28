@@ -2,20 +2,20 @@ package specific.ocl.parser
 
 import specific.ocl.CollectionKind
 import specific.ocl.Expressions.VariableDeclaration
-import specific.sysml.{Name, NamedElement, PathName, Types, ResolvedName}
+import specific.sysml.{Name, NamedElement, PathName, ResolvedName, Types}
 import specific.sysml.parser.SysMLLexer
 import specific.{ocl, sysml}
 import Types.Classifier
 import specific.util.ParserHelpers
 
-import scala.util.parsing.combinator.Parsers
+import scala.util.parsing.combinator.PackratParsers
 
 object OclParsers extends OclParsers
 
 /**
   * Created by martin on 25.04.16.
   */
-trait OclParsers extends Parsers with ParserHelpers {
+trait OclParsers extends PackratParsers with ParserHelpers {
   import OclTokens._
 
   override type Elem = OclLexer.Token

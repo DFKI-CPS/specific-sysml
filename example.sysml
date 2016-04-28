@@ -14,11 +14,10 @@ block Building
 
 block Person
   operations
-    admitted(q: Door): Boolean {
+    admitted(q: Door): Boolean
       post: q.org = self.sit and
             self.aut->includes(q.dest) and
             self.dap_dom->isEmpty()
-    }
   references
     aut: Building[*]
     sit: Building[1] {subsets aut}
@@ -33,10 +32,10 @@ block Door
     red: Boolean
   operations
     accept(p: Person)
-      { pre: p.admitted(self) }
-      { post: p.sit == p }
+      pre: p.admitted(self)
+      post: p.sit == p
     refuse(p: Person): Unit
-      { post: p.sit == p@pre.sit }
+      post: p.sit == p@pre.sit
     pass_thru(): Unit
     off_grn() {post: not green}
     off_red() {post: not red}
@@ -51,20 +50,18 @@ block Door
     state machine DoorBehavior
       state Waiting
         receive incoming(p) -> choose
-          [{ p.admitted(this) }] / { accept(p) }     -> Accepting
-          [{ not p.admitted(this) }] / { refuse(p) } -> Refusing
+          [ p.admitted(this)     ] / accept(p) -> Accepting
+          [ not p.admitted(this) ] / refuse(p) -> Refusing
       state Accepting
-        after 30000 ms              -> Waiting
-        receive passing / { pass_thru() } -> Waiting
+        after 30000 ms                -> Waiting
+        receive passing / pass_thru() -> Waiting
       state Refusing
         after 30 seconds -> Waiting
 
-{
 context Door::accept(p: Person):
   pre accept_pre1: not (green or red)
   pre accept_pre2: p.admitted(self)
   post accept_post: self.dap = p and p.dap_dom= self
-
 
 context Door::pass_thru():
   pre pass_pre:  self.green
@@ -90,5 +87,3 @@ context Door::refuse(p: Person):
 -- for a period of 2 seconds, the door stays blocked of course.
 context Door::off_red():
   post off_red_post: self.red = false
-}
---------------------------------------------------------------------------------
