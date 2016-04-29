@@ -82,7 +82,7 @@ object SysMLParsers extends OclParsers {
 
   def transitionTarget: Parser[TransitionTarget] =
     ( state ^^ (InlineTargetState)
-    | simpleName[ConcreteState] ^^ (UnresolvedTargetStateName) )
+    | simpleName ^^ (UnresolvedTargetStateName) )
 
   def guard: Parser[UnprocessedConstraint] = LEFT_SQUARE_BRACKET ~> ((allExcept(RIGHT_SQUARE_BRACKET).* ^^ UnprocessedConstraint) <~ RIGHT_SQUARE_BRACKET)
 
@@ -144,7 +144,7 @@ object SysMLParsers extends OclParsers {
 
   def operation: Parser[Operation] =
     name ~ parameterList ~ opt(named("return type", typing)) ~ constraint.* ~ opt(indented(ignoreIndentation(operationConstraint.*),"constraint")) ^^ {
-      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name,tpe.getOrElse(TypeAnnotation(ResolvedName(ocl.Types.VoidType), defaultMultiplicity)),ps,cs1 ++ cs2.map(_.flatten).getOrElse(Nil))
+      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name,tpe,ps,cs1 ++ cs2.map(_.flatten).getOrElse(Nil))
     }
 
   def ignoreIndentation[T](parser: => Parser[T]) = Parser(input => parser(new IndentationIgnorer(input)))

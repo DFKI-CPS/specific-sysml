@@ -4,6 +4,7 @@ import specific.ocl.parser.OclTokens
 
 import scala.collection.SortedSet
 import scala.util.parsing.combinator.token.Tokens
+import scala.util.parsing.input.Positional
 
 /**
   * Created by martin on 18.04.16.
@@ -12,7 +13,7 @@ object SysMLTokens {
   type Token = OclTokens.Token
   type Delimiter = OclTokens.Delimiter
 
-  case class SysmlComment(chars: String) extends Token
+  case class SysmlComment(chars: String) extends Token with Positional
 
   sealed trait Indentation extends Token { val n: Int; val chars = "" }
 

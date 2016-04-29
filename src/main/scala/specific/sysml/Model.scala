@@ -30,7 +30,7 @@ object DiagramKind {
 
 sealed trait DiagramContent[T <: DiagramKind]
 
-case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name[NamedElement], diagramName: String, content: Seq[Element]) extends NamedElement {
+case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name, diagramName: String, content: Seq[Element]) extends NamedElement {
   val name = Some(diagramName)
   override def toString = s"$diagramKind [$modelElementType] $modelElementName [$diagramName]\n" + indent(content.mkString("\n"))
 }
@@ -45,7 +45,7 @@ case class Block(rawName: String, compartments: Seq[BlockCompartment], comments:
   override def toString = s"<<block>> $name\n${indent(compartments.mkString("\n"))}"
   def members = compartments.flatMap(_.content)
 }
-case class TypeAnnotation(name: Name[Classifier], multiplicity: Multiplicity) {
+case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
   override def toString = s": $name$multiplicity"
 }
 
@@ -82,7 +82,7 @@ case class Reference(
 }
 case class Operation(
     name: String,
-    typeAnnotation: TypeAnnotation,
+    typeAnnotation: Option[TypeAnnotation],
     parameters: Seq[Parameter],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember {
   override def toString = s"<<operation>> $name(${parameters.mkString})$typeAnnotation"
@@ -127,7 +127,7 @@ case class InlineTargetState(state: State) extends TransitionTarget {
   override def toString = state.toString
 }
 
-case class UnresolvedTargetStateName(name: Name[ConcreteState]) extends TransitionTarget {
+case class UnresolvedTargetStateName(name: Name) extends TransitionTarget {
   override def toString = s"?'$name'"
 }
 
