@@ -13,7 +13,9 @@ object Types {
     * sole instance of AnyType. This metaclass allows defining the special property of being the generalization of all other
     * Classifiers, including Classes, DataTypes, and PrimitiveTypes.
     */
-  case object AnyType extends Classifier(Some("AnyType"))
+  case object AnyType extends Classifier(Some("AnyType")) {
+    val members = Seq.empty
+  }
 
   /**
     * VoidType is the metaclass of the OclVoid type that conforms to all types except the OclInvalid type. The only instance of
@@ -21,21 +23,27 @@ object Types {
     * null - corresponding to the UML NullLiteral literal specification - and representing the absence of value. Note that in
     * contrast with invalid, null is a valid value and as such can be owned by collections.
     */
-  case object VoidType extends Classifier("VoidType")
+  case object VoidType extends Classifier("VoidType"){
+    val members = Seq.empty
+  }
 
   /**
     * InvalidType represents a type that conforms to all types except the VoidType type. The only instance of InvalidType is
     * Invalid, which is further defined in the standard library. Furthermore Invalid has exactly one runtime instance identified
     * as OclInvalid.
     */
-  case object InvalidType extends Classifier("InvalidType")
+  case object InvalidType extends Classifier("InvalidType"){
+    val members = Seq.empty
+  }
 
   /** TupleType (informally known as record type or struct) combines different types into a single aggregate type. The parts of
     * a TupleType are described by its attributes, each having a name and a type. There is no restriction on the kind of types that
     * can be used as part of a tuple. In particular, a TupleType may contain other tuple types and collection types. Each attribute
     * of a TupleType represents a single feature of a TupleType. Each part is uniquely identified by its name.
     */
-  case class TupleType(parts: Seq[VariableDeclaration]) extends DataType("TupleType")
+  case class TupleType(parts: Seq[VariableDeclaration]) extends DataType("TupleType"){
+    val members = Seq.empty
+  }
 
   /**
     * CollectionType describes a list of elements of a particular given type. CollectionType is a concrete metaclass whose
@@ -46,7 +54,9 @@ object Types {
     * restriction on the element type of a collection type. This means in particular that a collection type may be parameterized
     * with other collection types allowing collections to be nested arbitrarily deep.
     */
-  sealed class CollectionType(name: String = "Collection", val elementType: Name) extends DataType(name)
+  sealed class CollectionType(name: String = "Collection", val elementType: Name) extends DataType(name){
+    val members = Seq.empty
+  }
 
   /**
     * OrderedSetType is a collection type that describes a set of elements where each distinct element occurs only once in the

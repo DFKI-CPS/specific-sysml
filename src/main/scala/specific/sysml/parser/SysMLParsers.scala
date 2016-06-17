@@ -2,8 +2,6 @@ package specific.sysml.parser
 
 import java.util.concurrent.TimeUnit
 
-import org.eclipse.papyrus.sysml.portandflows.FlowDirection
-import specific.ocl
 import specific.ocl.parser.{OclLexer, OclParsers, OclTokens}
 import specific.sysml.{UnlimitedNatural, _}
 
@@ -26,12 +24,12 @@ object SysMLParsers extends OclParsers {
     "bdd" ^^^ DiagramKind.BlockDefinitionDiagram
   })
 
-  def diagramElementParsers(kind: DiagramKind): Parser[Element] = kind match {
+  def diagramElementParsers(kind: DiagramKind): Parser[NamedElement] = kind match {
     case DiagramKind.BlockDefinitionDiagram => named("block or constraint", block | topLevelConstraint)
   }
 
   def topLevelConstraint =
-    CONTEXT ~! ignoreIndentation((allExcept(CONTEXT,SimpleName("block"),DEDENT,SEPARATOR) | SEPARATOR ~ not(CONTEXT|"block"|DEDENT)).*) ^^ UnprocessedConstraint
+    CONTEXT ~! ignoreIndentation((allExcept(CONTEXT,SimpleName("block"),DEDENT,SEPARATOR) | SEPARATOR ~ not(CONTEXT|"block"|DEDENT)).*) ^^ (x => UnprocessedConstraint(None,x))
 
   def diagram: Parser[Diagram] =
     ( diagramKind ~ enclosed(LEFT_SQUARE_BRACKET,elementType,RIGHT_SQUARE_BRACKET) ~ pathName[NamedElement] ~ enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ) >> {
@@ -39,7 +37,7 @@ object SysMLParsers extends OclParsers {
     }
 
   def pkg: Parser[Package] = PACKAGE ~> name ~ separated(block | constraint) ^^ {
-    case n ~ bs => Package(n,bs collect every[Block], bs collect every[UnprocessedConstraint], Nil)
+    case n ~ bs => Package(Some(n),bs collect every[Block], bs collect every[UnprocessedConstraint], Nil)
   }
 
   def block: Parser[Block] = "block" ~> name ~ indented(comment | compartment,"compartment") ^^ { case n~cs => Block(n,cs collect every [BlockCompartment], cs collect every [Comment]) }
@@ -84,9 +82,9 @@ object SysMLParsers extends OclParsers {
     ( state ^^ (InlineTargetState)
     | simpleName ^^ (UnresolvedTargetStateName) )
 
-  def guard: Parser[UnprocessedConstraint] = LEFT_SQUARE_BRACKET ~> ((allExcept(RIGHT_SQUARE_BRACKET).* ^^ UnprocessedConstraint) <~ RIGHT_SQUARE_BRACKET)
+  def guard: Parser[UnprocessedConstraint] = LEFT_SQUARE_BRACKET ~> ((allExcept(RIGHT_SQUARE_BRACKET).* ^^ (UnprocessedConstraint(None,_))) <~ RIGHT_SQUARE_BRACKET)
 
-  def action: Parser[UnprocessedConstraint] = SLASH ~> (allExcept(RIGHT_ARROW).* ^^ UnprocessedConstraint)
+  def action: Parser[UnprocessedConstraint] = SLASH ~> (allExcept(RIGHT_ARROW).* ^^ (UnprocessedConstraint(None,_)))
 
   def trigger: Parser[Trigger] =
   ( "after" ~> duration ^^ Timeout
@@ -107,32 +105,32 @@ object SysMLParsers extends OclParsers {
     "ports" ~> indented(port, "port") ^^ (PortsCompartment)
 
   def port: Parser[Port] =
-  ( flowDirection ~! name ~ typing ^^ { case dir ~ n ~ t => Port(n,dir,t) }
-  | name ~ typing ^^ { case n ~ t => Port(n,FlowDirection.INOUT,t) } )
+  ( flowDirection ~! name ~ typing ^^ { case dir ~ n ~ t => Port(Some(n),Some(dir),t) }
+  | name ~ typing ^^ { case n ~ t => Port(Some(n),None,t) } )
 
   def flowDirection: Parser[FlowDirection] =
-    ( IN ^^^ FlowDirection.IN
-    | "out" ^^^ FlowDirection.OUT
-    | "inout" ^^^ FlowDirection.INOUT )
+    ( IN ^^^ FlowDirection.In
+    | "out" ^^^ FlowDirection.Out
+    | "inout" ^^^ FlowDirection.InOut )
 
   def propertiesCompartment: Parser[PropertiesCompartment] =
     "properties" ~> indented(property, "property") ^^ (PropertiesCompartment)
 
   def property: Parser[Property] =
-    name ~ typing ~ opt(constraint) ^^ { case name ~ tpe ~ c => Property(name,tpe,c) }
+    name ~ typing ~ opt(constraint) ^^ { case name ~ tpe ~ c => Property(Some(name),tpe,c) }
 
   def valuesCompartment: Parser[ValuesCompartment] =
     "values" ~> indented(value, "value") ^^ (ValuesCompartment)
 
   def value: Parser[Value] =
-    name ~ typing ^^ { case name ~ tpe => Value(name,tpe) }
+    name ~ typing ^^ { case name ~ tpe => Value(Some(name),tpe) }
 
   def referencesCompartment: Parser[ReferencesCompartment] =
     "references" ~> indented(reference, "reference") ^^ (ReferencesCompartment)
 
   def reference: Parser[Reference] =
     name ~ typing ~ opt(opposite) ~ opt(constraint) ^^ {
-      case name ~ tpe ~o~c => Reference(name,tpe,o,c)
+      case name ~ tpe ~o~c => Reference(Some(name),tpe,o,c)
     }
 
   def opposite: Parser[String] = LEFT_ARROW ~> name
@@ -144,13 +142,13 @@ object SysMLParsers extends OclParsers {
 
   def operation: Parser[Operation] =
     name ~ parameterList ~ opt(named("return type", typing)) ~ constraint.* ~ opt(indented(ignoreIndentation(operationConstraint.*),"constraint")) ^^ {
-      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name,tpe,ps,cs1 ++ cs2.map(_.flatten).getOrElse(Nil))
+      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(Some(name),tpe,ps,cs1 ++ cs2.map(_.flatten).getOrElse(Nil))
     }
 
   def ignoreIndentation[T](parser: => Parser[T]) = Parser(input => parser(new IndentationIgnorer(input)))
 
   def operationConstraint: Parser[UnprocessedConstraint] =
-    ((PRE | POST) ~! opt(name) ~! COLON) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).* ^^ UnprocessedConstraint
+    ((PRE | POST) ~! opt(name) ~! COLON) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).* ^^ (UnprocessedConstraint(None,_))
 
   def parameterList: Parser[Seq[Parameter]] =
     named("parameter list", enclosed(LEFT_PARENS, repsep(parameter,COMMA), RIGHT_PARENS))
@@ -194,7 +192,7 @@ object SysMLParsers extends OclParsers {
     }
 
   def constraint: Parser[UnprocessedConstraint] = LEFT_BRACE ~! ( rep(elem("constraint content",_ != RIGHT_BRACE)) <~ RIGHT_BRACE ) ^^ {
-    case _~cs => UnprocessedConstraint(cs.toString)
+    case _~cs => UnprocessedConstraint(None,cs.toString)
   }
 
   def name: Parser[String] = named("identifier", acceptMatch("identifier", {

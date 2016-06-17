@@ -1,10 +1,9 @@
 package specific.sysml.parser
 
-import specific.sysml.ModelBuilder
-import specific.sysml.synthesis.Synthesizer
+import specific.sysml.synthesis.{Error, Failure, Success, Synthesizer}
 
 import scala.io.Source
-import scala.util.parsing.input.{CharSequenceReader, Reader}
+import scala.util.parsing.input.{CharSequenceReader, NoPosition, Reader}
 
 /**
   * Created by martin on 19.04.16.
@@ -19,17 +18,26 @@ object Test extends App {
     case SysMLParsers.Success(b,_) =>
       println("passed")
       println("synthesizing")
+      println(b)
+      /*val x = Success(null).and(Success(null).dispatch {
+        Success(null).dispatch {
+          Failure(Seq(Error(NoPosition,"A")))
+        }
+      })
+      println(x.complete())
       val builder = new Synthesizer("example")
       val res = builder.synthesize(b).complete()
-      if (res.isSuccess) println("success")
+      if (res.isSuccess) {
+        println("success")
+      }
       else {
         println("synthesis failed")
         println(res)
-        res.messages.foreach(println)
       }
-      builder.save()
+      //res.messages.foreach(println)
+      //builder.save()
     case SysMLParsers.NoSuccess(msg,i) =>
-      println(s"$msg [${i.pos}]:\n${i.pos.longString}")
+      println(s"$msg [${i.pos}]:\n${i.pos.longString}")*/
   }
 
 }

@@ -6,12 +6,14 @@ trait TypedElement {
 }
 
 object Types {
-  abstract class Classifier(val name: Option[String]) extends Type with NamedElement {
+  abstract class Classifier(val name: Option[String]) extends Type with Namespace {
     def this(name: String) = this(Some(name))
   }
   abstract class DataType(name: String) extends Classifier(name)
 
-  sealed abstract class PrimitiveType[R](name: String) extends DataType(name)
+  sealed abstract class PrimitiveType[R](name: String) extends DataType(name) {
+    def members = Seq.empty
+  }
 
   /**
     * An instance of Integer is a value in the (infinite) set of integers

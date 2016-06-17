@@ -1,7 +1,6 @@
 package specific.sysml
 
 import Types.Classifier
-import org.eclipse.papyrus.sysml.portandflows.FlowDirection
 
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
@@ -30,13 +29,15 @@ object DiagramKind {
 
 sealed trait DiagramContent[T <: DiagramKind]
 
-case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name, diagramName: String, content: Seq[Element]) extends NamedElement {
+case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name, diagramName: String, members: Seq[NamedElement]) extends VirtualNamespace with NamedElement {
   val name = Some(diagramName)
-  override def toString = s"$diagramKind [$modelElementType] $modelElementName [$diagramName]\n" + indent(content.mkString("\n"))
+  override def qualifiedName = Some(modelElementName.parts)
+  override def toString = s"$diagramKind [$modelElementType] $modelElementName [$diagramName]\n" + indent(members.mkString("\n"))
 }
 
-case class Package(name: String, blocks: Seq[Block], constraints: Seq[UnprocessedConstraint], subpackages: Seq[Package]) {
+case class Package(name: Option[String], blocks: Seq[Block], constraints: Seq[UnprocessedConstraint], subpackages: Seq[Package]) extends Namespace {
   override def toString = s"<<package>> $name\n\n${blocks.mkString("\n\n")}"
+  def members = blocks ++ constraints
 }
 
 trait Type
@@ -49,7 +50,8 @@ case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
   override def toString = s": $name$multiplicity"
 }
 
-case class UnprocessedConstraint(content: Any) extends BlockMember
+
+case class UnprocessedConstraint(name: Option[String], content: Any) extends BlockMember
 
 sealed abstract class BlockCompartment(val compartmentName: String, val content: Seq[BlockMember]) extends Element {
   override def toString = s"<<compartment>> $compartmentName\n${indent(content.mkString("\n"))}"
@@ -65,23 +67,23 @@ case class PortsCompartment(ports: Seq[Port]) extends BlockCompartment("ports", 
 case class BehaviorCompartment(stms: Seq[StateMachine]) extends BlockCompartment("owned behaviors", stms)
 case class ConstraintsCompartment(rawConstraints: Seq[UnprocessedConstraint]) extends BlockCompartment("constraints", rawConstraints)
 
-sealed trait BlockMember extends Element
+sealed trait BlockMember extends NamedElement
 
-case class Property(name: String, typeAnnotation: TypeAnnotation, constraint: Option[UnprocessedConstraint]) extends BlockMember
+case class Property(name: Option[String], typeAnnotation: TypeAnnotation, constraint: Option[UnprocessedConstraint]) extends BlockMember
 
-case class Value(name: String, typeAnnotation: TypeAnnotation) extends BlockMember {
+case class Value(name: Option[String], typeAnnotation: TypeAnnotation) extends BlockMember {
   override def toString = s"<<value>> $name$typeAnnotation"
 }
 
 case class Reference(
-    name: String,
+    name: Option[String],
     typeAnnotation: TypeAnnotation,
     oppositeName: Option[String],
     constraint: Option[UnprocessedConstraint]) extends BlockMember {
-  override def toString = s"<<reference>> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
+  override def toString = s"<<reference>> $qualifiedName$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
 }
 case class Operation(
-    name: String,
+    name: Option[String],
     typeAnnotation: Option[TypeAnnotation],
     parameters: Seq[Parameter],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember {
@@ -92,12 +94,20 @@ case class Parameter(name: String, typeAnnotation: TypeAnnotation) extends Eleme
   override def toString = s"<<param>> $name$typeAnnotation"
 }
 
-case class Port(name: String, direction: FlowDirection, typeAnnotation: TypeAnnotation) extends BlockMember {
+sealed trait FlowDirection
+object FlowDirection {
+  case object In extends FlowDirection
+  case object Out extends FlowDirection
+  case object InOut extends FlowDirection
+}
+
+case class Port(name: Option[String], direction: Option[FlowDirection], typeAnnotation: TypeAnnotation) extends BlockMember {
   override def toString = s"<<port>> $direction $name$typeAnnotation"
 }
 
-case class StateMachine(name: Option[String], states: Seq[State]) extends BlockMember {
+case class StateMachine(name: Option[String], states: Seq[State]) extends BlockMember with Namespace {
   override def toString = s"<<state machine>> ${name.getOrElse("<unnamed>")}\n${indent(states.mkString("\n"))}"
+  def members = states
 }
 
 sealed trait State extends NamedElement
