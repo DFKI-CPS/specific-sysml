@@ -1,7 +1,7 @@
 package specific.ocl
 
 import specific.ocl.Expressions.VariableDeclaration
-import specific.sysml.{Name, Types}
+import specific.sysml.{Name, Type}
 import specific.sysml.Types.{Classifier, DataType}
 
 /**
@@ -13,7 +13,7 @@ object Types {
     * sole instance of AnyType. This metaclass allows defining the special property of being the generalization of all other
     * Classifiers, including Classes, DataTypes, and PrimitiveTypes.
     */
-  case object AnyType extends Classifier(Some("AnyType")) {
+  case object AnyType extends Classifier("AnyType") {
     val members = Seq.empty
   }
 

@@ -1,9 +1,11 @@
 package specific.sysml
 
 import Types.Classifier
+import scala.concurrent.ExecutionContext.Implicits.global
 
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+
 
 object indent {
   def apply(lines: String) = lines.lines.map("  " + _).mkString("\n")
@@ -29,13 +31,12 @@ object DiagramKind {
 
 sealed trait DiagramContent[T <: DiagramKind]
 
-case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Name, diagramName: String, members: Seq[NamedElement]) extends VirtualNamespace with NamedElement {
-  val name = Some(diagramName)
-  override def qualifiedName = Some(modelElementName.parts)
+case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Seq[String], diagramName: String, members: Seq[NamedElement]) extends Namespace {
+  val name = diagramName
   override def toString = s"$diagramKind [$modelElementType] $modelElementName [$diagramName]\n" + indent(members.mkString("\n"))
 }
 
-case class Package(name: Option[String], blocks: Seq[Block], constraints: Seq[UnprocessedConstraint], subpackages: Seq[Package]) extends Namespace {
+case class Package(name: String, blocks: Seq[Block], constraints: Seq[UnprocessedConstraint], subpackages: Seq[Package]) extends Namespace {
   override def toString = s"<<package>> $name\n\n${blocks.mkString("\n\n")}"
   def members = blocks ++ constraints
 }
@@ -46,12 +47,18 @@ case class Block(rawName: String, compartments: Seq[BlockCompartment], comments:
   override def toString = s"<<block>> $name\n${indent(compartments.mkString("\n"))}"
   def members = compartments.flatMap(_.content)
 }
+
 case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
   override def toString = s": $name$multiplicity"
 }
 
+object TypeAnnotation {
+  val Null = TypeAnnotation(ResolvedName(Types.Null), Multiplicity(false,false,0,UnlimitedNatural.Finite(0)))
+}
 
-case class UnprocessedConstraint(name: Option[String], content: Any) extends BlockMember
+case class UnprocessedConstraint(content: Any) extends BlockMember {
+  def name = "<<anonymous>>"
+}
 
 sealed abstract class BlockCompartment(val compartmentName: String, val content: Seq[BlockMember]) extends Element {
   override def toString = s"<<compartment>> $compartmentName\n${indent(content.mkString("\n"))}"
@@ -69,22 +76,25 @@ case class ConstraintsCompartment(rawConstraints: Seq[UnprocessedConstraint]) ex
 
 sealed trait BlockMember extends NamedElement
 
-case class Property(name: Option[String], typeAnnotation: TypeAnnotation, constraint: Option[UnprocessedConstraint]) extends BlockMember
+case class Property(
+  name: String,
+  typeAnnotation: TypeAnnotation,
+  constraint: Option[UnprocessedConstraint]) extends BlockMember
 
-case class Value(name: Option[String], typeAnnotation: TypeAnnotation) extends BlockMember {
+case class Value(name: String, typeAnnotation: TypeAnnotation) extends BlockMember {
   override def toString = s"<<value>> $name$typeAnnotation"
 }
 
 case class Reference(
-    name: Option[String],
+    name: String,
     typeAnnotation: TypeAnnotation,
     oppositeName: Option[String],
-    constraint: Option[UnprocessedConstraint]) extends BlockMember {
-  override def toString = s"<<reference>> $qualifiedName$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
+    constraint: Option[UnprocessedConstraint]) extends BlockMember with TypedElement {
+  override def toString = s"<<reference>> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
 }
 case class Operation(
-    name: Option[String],
-    typeAnnotation: Option[TypeAnnotation],
+    name: String,
+    typeAnnotation: TypeAnnotation,
     parameters: Seq[Parameter],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember {
   override def toString = s"<<operation>> $name(${parameters.mkString})$typeAnnotation"
@@ -101,25 +111,25 @@ object FlowDirection {
   case object InOut extends FlowDirection
 }
 
-case class Port(name: Option[String], direction: Option[FlowDirection], typeAnnotation: TypeAnnotation) extends BlockMember {
+case class Port(name: String, direction: Option[FlowDirection], typeAnnotation: TypeAnnotation) extends BlockMember {
   override def toString = s"<<port>> $direction $name$typeAnnotation"
 }
 
-case class StateMachine(name: Option[String], states: Seq[State]) extends BlockMember with Namespace {
-  override def toString = s"<<state machine>> ${name.getOrElse("<unnamed>")}\n${indent(states.mkString("\n"))}"
+case class StateMachine(name: String, states: Seq[State]) extends BlockMember with Namespace {
+  override def toString = s"<<state machine>> $name\n${indent(states.mkString("\n"))}"
   def members = states
 }
 
 sealed trait State extends NamedElement
 
-case class ConcreteState(name: Option[String], transitions: Seq[Transition]) extends State {
+case class ConcreteState(name: String, transitions: Seq[Transition]) extends State {
   override def toString = s"<<state>> $name\n${indent(transitions.mkString("\n"))}"
 }
 
 sealed trait PseudoState extends State
 
 case class Choice(transitions: Seq[Transition]) extends PseudoState {
-  val name = None
+  val name = "<<anonymous>>"
   override def toString = s"<<choice pseudo state>>\n${indent(transitions.mkString("\n"))}"
 }
 
@@ -131,18 +141,21 @@ case class Transition(
   override def toString = s"<<transition>> ${trigger.map(_.toString).getOrElse("")} [${guard.map(_.toString).getOrElse("")}] / ${action.map(_.toString).getOrElse("")} -> $target"
 }
 
-sealed trait TransitionTarget
+sealed trait TransitionTarget extends Element
 
 case class InlineTargetState(state: State) extends TransitionTarget {
   override def toString = state.toString
 }
 
 case class UnresolvedTargetStateName(name: Name) extends TransitionTarget {
-  override def toString = s"?'$name'"
+  override def toString = name.toString
 }
 
-sealed trait Trigger
-case class Timeout(after: Duration) extends Trigger
-case class Receive(portName: String, boundVariableName: Option[String]) extends Trigger
+sealed trait Trigger extends Element
+object Trigger {
+  case class Timeout(after: Duration) extends Trigger
+  case class Receive(portName: String, boundVariableName: Option[String]) extends Trigger
+  //case class Call(operation)
+}
 
 sealed trait CallExpr

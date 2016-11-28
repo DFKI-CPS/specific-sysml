@@ -1,7 +1,5 @@
 package specific.sysml.parser
 
-
-import scala.util.parsing.combinator.Parsers
 import scala.util.parsing.input.{Position, Reader}
 
 /**

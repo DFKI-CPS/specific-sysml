@@ -1,7 +1,7 @@
 package specific.ocl
 
 import specific.sysml.Types.Classifier
-import specific.sysml.Name
+import specific.sysml.{Name, Type}
 
 object Expressions {
 

@@ -1,8 +1,9 @@
 package specific.sysml
 
-import scala.concurrent.{Future, Promise}
+import scala.util.parsing.input.{NoPosition, Position}
 
 sealed trait Name {
+  var pos: Position = NoPosition
   val parts: Seq[String]
 }
 
@@ -16,5 +17,5 @@ case class PathName(parts: Seq[String]) extends Name {
 }
 
 case class ResolvedName[T <: NamedElement](element: T) extends Name {
-  val parts = element.name.toSeq
+  val parts = Seq(element.name)
 }

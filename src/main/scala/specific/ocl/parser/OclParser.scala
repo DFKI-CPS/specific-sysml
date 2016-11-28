@@ -138,6 +138,7 @@ trait OclParsers extends PackratParsers with ParserHelpers {
     ( "Boolean" ^^^ sysml.Types.Boolean
     | "Integer" ^^^ sysml.Types.Integer
     | "Real" ^^^ sysml.Types.Real
+    | "Unit" ^^^ sysml.Types.Unit
     | "String" ^^^ sysml.Types.String
     | "UnlimitedNatural" ^^^ sysml.Types.UnlimitedNatural) ^^ sysml.ResolvedName[Classifier]
 

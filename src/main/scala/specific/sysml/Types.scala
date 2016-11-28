@@ -1,15 +1,17 @@
 package specific.sysml
 
-
-trait TypedElement {
-  val typing: Type
+trait TypedElement extends Element {
+  val typeAnnotation: TypeAnnotation
 }
 
 object Types {
-  abstract class Classifier(val name: Option[String]) extends Type with Namespace {
-    def this(name: String) = this(Some(name))
-  }
+  abstract class Classifier(val name: String) extends Type with Namespace
+
   abstract class DataType(name: String) extends Classifier(name)
+
+  case object Null extends DataType("nullType") {
+    def members = Seq.empty
+  }
 
   sealed abstract class PrimitiveType[R](name: String) extends DataType(name) {
     def members = Seq.empty
@@ -51,4 +53,6 @@ object Types {
     * identical to the predecessor IEEE 754 standard).
     */
   case object Real extends PrimitiveType[BigDecimal]("Real")
+
+  case object Unit extends PrimitiveType[Unit]("Unit")
 }
