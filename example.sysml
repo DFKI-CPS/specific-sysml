@@ -4,7 +4,7 @@ bdd [package] acs [ACS]
 block Building
   references
     gate: Building[*] { ordered, unique } <- building
-    building: Building[*] <- gate
+    building: Building[1..0] <- gate
     org_dom: Door[*] <- org
   constraints
     { self.gate = self.org_dom.dest }
@@ -50,7 +50,7 @@ block Door
     in passing: Boolean
   owned behaviors
     state machine DoorBehavior
-      state Waiting
+      initial state Waiting
         receive incoming(p) -> choose
           [ p.admitted(this)     ] / accept(p) -> Accepting
           [ not p.admitted(this) ] / refuse(p) -> Refusing

@@ -34,9 +34,9 @@ trait OclParsers extends PackratParsers with ParserHelpers {
   def variableExp: Parser[Any] =
     simpleName | SELF
 
-  def simpleName[T <: NamedElement]: Parser[sysml.SimpleName] = acceptMatch("simple name", {
+  def simpleName[T <: NamedElement]: Parser[sysml.SimpleName] = positioned(acceptMatch("simple name", {
     case s: OclTokens.SimpleName if !s.isReserved => sysml.SimpleName(s.chars)
-  })
+  }))
 
   def restrictedKeyword = acceptMatch("restricted keyword", {
     case s: OclTokens.SimpleName if s.isReserved => sysml.SimpleName(s.chars)
@@ -47,7 +47,7 @@ trait OclParsers extends PackratParsers with ParserHelpers {
   })
 
   def pathName[T <: NamedElement]: Parser[Name] =
-    ( simpleName[T] ~ (DOUBLE_COLON ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ (_.map(_.name)) ^^ PathName
+    positioned( simpleName[T] ~ (DOUBLE_COLON ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ (_.map(_.name)) ^^ PathName
     | simpleName[T] )
 
   def literalExp: Parser[Any] =
@@ -127,8 +127,8 @@ trait OclParsers extends PackratParsers with ParserHelpers {
       case name ~ tpe => VariableDeclaration(name.name,tpe)
     }
 
-  def typeExp: Parser[Name] =
-    ( pathName
+  def typeExp: Parser[Name] = positioned(
+      pathName
     | collectionType
     | tupleType
     | primitiveType

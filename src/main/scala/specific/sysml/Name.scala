@@ -1,10 +1,13 @@
 package specific.sysml
 
-import scala.util.parsing.input.{NoPosition, Position}
+import scala.util.parsing.input.{Position, Positional}
 
-sealed trait Name {
-  var pos: Position = NoPosition
+sealed trait Name extends Positional {
   val parts: Seq[String]
+  def at(pos: Positional): this.type = {
+    this.pos = pos.pos
+    this
+  }
 }
 
 case class SimpleName(name: String) extends Name {

@@ -74,7 +74,7 @@ object SysMLParsers extends OclParsers {
     ("state" ~ "machine") ~> name ~ indented(state, "state") ^^ { case n~ss => StateMachine(n.name,ss).at(n) }
 
   def state: Parser[State] =
-    ( "state" ~> name ~ indented(transition, "transition") ^^ { case n~ts => ConcreteState(n.name,ts).at(n) }
+    ( ("initial".? <~ "state") ~ name ~ indented(transition, "transition") ^^ { case i~n~ts => ConcreteState(n.name,ts,i.isDefined).at(n) }
     | "choose" ~> indented(transition, "transition") ^^ Choice )
 
   def transition: Parser[Transition] = opt(trigger) ~ opt(guard) ~ opt(action) ~ (RIGHT_ARROW ~>  transitionTarget) ^^ { case t~g~a~s => Transition(t,g,a,s) }
@@ -190,9 +190,9 @@ object SysMLParsers extends OclParsers {
   def optionalTyping: Parser[TypeAnnotation] = opt(typing).map(_.getOrElse(TypeAnnotation.Null))
 
   def typing: Parser[TypeAnnotation] =
-    named("type signature", COLON ~> typeExp ~ opt(multiplicity)) ^^ {
+    positioned(named("type signature", COLON ~> typeExp ~ opt(multiplicity)) ^^ {
       case nps~mult => TypeAnnotation(nps, mult.getOrElse(defaultMultiplicity))
-    }
+    })
 
   def constraint: Parser[UnprocessedConstraint] = LEFT_BRACE ~! ( rep(elem("constraint content",_ != RIGHT_BRACE)) <~ RIGHT_BRACE ) ^^ {
     case _~cs => UnprocessedConstraint(None,cs.toString)

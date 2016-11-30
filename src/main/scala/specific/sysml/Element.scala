@@ -1,10 +1,10 @@
 package specific.sysml
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.util.parsing.input.Positional
+import org.eclipse.uml2.uml.{ Element => UMLElement }
 
 trait Element extends Positional {
-  private [sysml] var uml = Option.empty[org.eclipse.uml2.uml.Element]
+  private [sysml] var uml = Option.empty[UMLElement]
 
   def at(position: Positional): this.type = {
     this.setPos(position.pos)
@@ -14,6 +14,4 @@ trait Element extends Positional {
 
 trait NamedElement extends Element {
   def name: String
-  private [sysml] var _parent = Promise[VirtualNamespace]
-  def namespace = _parent.future
 }

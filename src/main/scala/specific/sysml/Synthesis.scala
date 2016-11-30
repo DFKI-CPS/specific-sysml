@@ -1,6 +1,8 @@
 package specific.sysml
 
-import org.eclipse.emf.common.util.URI
+import java.util
+
+import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
 import org.eclipse.papyrus.sysml
 import org.eclipse.papyrus.sysml.blocks.{BlocksFactory, BlocksPackage}
@@ -9,6 +11,8 @@ import org.eclipse.uml2.uml
 import org.eclipse.uml2.uml.{Profile, PseudostateKind, UMLFactory}
 import org.eclipse.papyrus.sysml._
 import org.eclipse.papyrus.sysml.util.SysmlResource
+import org.eclipse.uml2.common.util.UML2Util
+import org.eclipse.uml2.uml.util.{UMLUtil, UMLValidator}
 import specific.sysml.Types.PrimitiveType
 
 import scala.util.parsing.input.{NoPosition, Position}
@@ -152,7 +156,8 @@ class Synthesis(name: String) {
       stm.getRegions.add(reg)
       states.map(st => structure(reg, st))
       member.uml = Some(stm)
-    case UnprocessedConstraint(_) => // TODO
+    case UnprocessedConstraint(_) =>
+      // TODO
     case other =>
       error(other.pos, s"could not synthesize $other")
   }
@@ -166,12 +171,21 @@ class Synthesis(name: String) {
   }
 
   def structure(stm: uml.Region, state: State): Option[uml.Vertex] = state match {
-    case ConcreteState(name, transitions) =>
+    case ConcreteState(name, transitions, isInitial) =>
       val st = umlFactory.createState()
       st.setName(name)
       stm.getSubvertices.add(st)
       transitions.map(ts => structure(st, ts))
       state.uml = Some(st)
+      if (isInitial) {
+        val init = umlFactory.createPseudostate()
+        init.setKind(PseudostateKind.INITIAL_LITERAL)
+        val tans = umlFactory.createTransition()
+        tans.setSource(init)
+        tans.setTarget(st)
+        stm.getSubvertices.add(init)
+        stm.getTransitions.add(tans)
+      }
       Some(st)
     case Choice(transitions) =>
       val st = umlFactory.createPseudostate()
@@ -240,25 +254,32 @@ class Synthesis(name: String) {
   /// NAME RESOLUTION  /////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
-  def resolveTypeName(scope: uml.Namespace, name: Name): Option[uml.Type] = name match {
-    case ResolvedName(Types.Unit | Types.Null) => Some(null)
-    case ResolvedName(t: PrimitiveType[_]) =>
-      val primTypes = collectionAsScalaIterable(primitives.getContents.get(0).eContents())
-      primTypes.collectFirst {
-        case tpe: uml.Type if tpe.getName == t.name => tpe
-      }
-    case ResolvedName(other) =>
-      resolveTypeName(scope,SimpleName(other.name))
-    case PathName(name) =>
-      if (name.isEmpty) None
-      else if (name.length == 1) resolveTypeName(scope,SimpleName(name.head)) else None
-    case SimpleName(name) =>
-      val members = collectionAsScalaIterable(scope.getMembers)
-      val res = members.find(_.getName == name) collect {
-        case tp: uml.Type => tp
-      }
-      val above = Option(scope.getNamespace)
-      res orElse above.flatMap(resolveTypeName(_,SimpleName(name)))
+  def resolveTypeName(scope: uml.Namespace, name: Name): Option[uml.Type] = {
+    def resolveTypeNameInternal(scope: uml.Namespace, name: Name): Option[uml.Type] = name match {
+      case ResolvedName(Types.Unit | Types.Null) => Some(null)
+      case ResolvedName(t: PrimitiveType[_]) =>
+        val primTypes = collectionAsScalaIterable(primitives.getContents.get(0).eContents())
+        primTypes.collectFirst {
+          case tpe: uml.Type if tpe.getName == t.name => tpe
+        }
+      case ResolvedName(other) =>
+        resolveTypeNameInternal(scope,SimpleName(other.name) at name)
+      case PathName(name) =>
+        if (name.isEmpty) None
+        else if (name.length == 1) resolveTypeNameInternal(scope,SimpleName(name.head)) else None
+      case SimpleName(n) =>
+        val members = collectionAsScalaIterable(scope.getMembers)
+        val res = members.find(_.getName == n) collect {
+          case tp: uml.Type => tp
+        }
+        val above = Option(scope.getNamespace)
+        res orElse above.flatMap(resolveTypeNameInternal(_,SimpleName(n) at name))
+    }
+
+    resolveTypeNameInternal(scope,name) orElse {
+      error(name.pos, s"not found: type ${name.parts.mkString("::")}")
+      None
+    }
   }
 
   def naming(elem: Element): Unit = elem match {
@@ -279,18 +300,14 @@ class Synthesis(name: String) {
     case Parameter(name,tpe) =>
       elem.uml.collect {
         case op: uml.Parameter =>
-          resolveTypeName(op.getOperation.getClass_,tpe.name).fold {
-            error(tpe.name.pos, s"unknown type $tpe")
-          } { tpe =>
-            op.setType(tpe)
-          }
+          resolveTypeName(op.getOperation.getClass_,tpe.name)
+            .foreach(op.setType)
       }
     case Reference(name,tpe,opposite,constraint) =>
       elem.uml.collect {
         case op: uml.Property =>
-          resolveTypeName(op.getClass_,tpe.name).fold {
-            error(tpe.name.pos, s"unknown type $tpe")
-          } { tpe =>
+
+          resolveTypeName(op.getClass_,tpe.name).foreach{ tpe =>
             op.setType(tpe)
             val opp = (opposite, tpe) match {
               case (Some(o),tpe: uml.Classifier) =>
@@ -305,9 +322,7 @@ class Synthesis(name: String) {
     case Property(name,tpe,constraint) =>
       elem.uml.collect {
         case op: uml.Property =>
-          resolveTypeName(op.getClass_,tpe.name).fold {
-            error(tpe.name.pos, s"unknown type $tpe")
-          } { tpe =>
+          resolveTypeName(op.getClass_,tpe.name).foreach { tpe =>
             op.setType(tpe)
           }
       }
@@ -315,16 +330,14 @@ class Synthesis(name: String) {
     case Value(name,tpe) =>
       elem.uml.collect {
         case op: uml.Property =>
-          resolveTypeName(op.getClass_,tpe.name).fold {
-            error(tpe.name.pos, s"unknown type $tpe")
-          } { tpe =>
+          resolveTypeName(op.getClass_,tpe.name).foreach { tpe =>
             op.setType(tpe)
           }
       }
     case UnprocessedConstraint(_) =>
     case StateMachine(name,states) =>
       states.map(naming)
-    case ConcreteState(name,tss) =>
+    case ConcreteState(name,tss,initial) =>
       tss.map(naming)
     case Choice(tss) =>
       tss.map(naming)
@@ -351,17 +364,28 @@ class Synthesis(name: String) {
       error(elem.pos, s"could not synthesize $other")
   }
 
-
   //////////////////////////////////////////////////////////////////////////////
   /// TYPE CHECKING  ///////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
   private def warn(pos: Position, message: String) =
-    println(s"WARN: $pos: $message")
+    println(s"WARN: $pos: $message\n${pos.longString}")
   private def error(pos: Position, message: String) =
-    println(s"ERROR: $pos: $message")
+    println(s"ERROR: $pos: $message\n${pos.longString}")
   private def abort(pos: Position, message: String) =
-    println(s"ERROR: $pos: $message")
+    println(s"ERROR: $pos: $message\n${pos.longString}")
 
-  def save() = resource.save(mapAsJavaMap(Map.empty[Any,Any]))
+  def save() = {
+    val chain = new DiagnosticChain {
+      def merge(diagnostic: Diagnostic) =
+        println(s"merge: $diagnostic")
+      def addAll(diagnostic: Diagnostic) =
+        println(s"addAll: $diagnostic")
+      def add(diagnostic: Diagnostic) =
+        println(s"add: $diagnostic")
+    }
+    val validate = new UMLValidator
+    validate.validateModel(model,chain,new util.HashMap[AnyRef,AnyRef]())
+    resource.save(mapAsJavaMap(Map.empty[Any,Any]))
+  }
 }

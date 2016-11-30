@@ -47,6 +47,7 @@ object SysMLTokens {
     override def toString = start match {
       case Indentation.Spaces(n) => s"mixed indentation characters in one line (tab afer $n spaces)"
       case Indentation.Tabs(n) => s"mixed indentation characters in one line (space afer $n tabs)"
+      case Indentation.None => sys.error("invalid indentation state")
     }
   }
 

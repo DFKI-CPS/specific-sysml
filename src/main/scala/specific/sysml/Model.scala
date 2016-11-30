@@ -1,10 +1,11 @@
 package specific.sysml
 
 import Types.Classifier
-import scala.concurrent.ExecutionContext.Implicits.global
 
+import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import scala.util.parsing.input.Positional
 
 
 object indent {
@@ -48,11 +49,11 @@ case class Block(rawName: String, compartments: Seq[BlockCompartment], comments:
   def members = compartments.flatMap(_.content)
 }
 
-case class TypeAnnotation(name: Name, multiplicity: Multiplicity) {
+case class TypeAnnotation(name: Name, multiplicity: Multiplicity) extends Positional {
   override def toString = s": $name$multiplicity"
 }
 
-object TypeAnnotation {
+object TypeAnnotation{
   val Null = TypeAnnotation(ResolvedName(Types.Null), Multiplicity(false,false,0,UnlimitedNatural.Finite(0)))
 }
 
@@ -122,7 +123,7 @@ case class StateMachine(name: String, states: Seq[State]) extends BlockMember wi
 
 sealed trait State extends NamedElement
 
-case class ConcreteState(name: String, transitions: Seq[Transition]) extends State {
+case class ConcreteState(name: String, transitions: Seq[Transition], isInitial: Boolean) extends State {
   override def toString = s"<<state>> $name\n${indent(transitions.mkString("\n"))}"
 }
 
