@@ -23,7 +23,7 @@ block Person
     sit: Building[1] {subsets aut}
     dap_dom: Door <- dap
   constraints
-    { self.aut->forAll(b|self.aut.building->includes(b) }
+    { self.aut->forAll(b|self.aut.building->includes(b)) }
     { Person.allInstances()->forAll(p1, p2 | p1.dap_dom->notEmpty() and p1.dap_dom = p2.dap_dom implies p1 = p2) }
 
 block Door

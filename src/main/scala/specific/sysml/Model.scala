@@ -5,7 +5,7 @@ import Types.Classifier
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
-import scala.util.parsing.input.Positional
+import scala.util.parsing.input.{Position, Positional}
 
 
 object indent {
@@ -57,7 +57,7 @@ object TypeAnnotation{
   val Null = TypeAnnotation(ResolvedName(Types.Null), Multiplicity(false,false,0,UnlimitedNatural.Finite(0)))
 }
 
-case class UnprocessedConstraint(content: Any) extends BlockMember {
+case class UnprocessedConstraint(content: String) extends BlockMember {
   def name = "<<anonymous>>"
 }
 

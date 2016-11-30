@@ -6,6 +6,8 @@ import scala.util.parsing.input.{Position, Reader}
   * Created by martin on 19.04.16.
   */
 case class IndentScanner(input: Reader[SysMLLexer.Token], indentStack: List[SysMLTokens.Indentation] = Nil) extends Reader[SysMLLexer.Token] {
+  override def offset: Int = input.offset
+
   def atEnd: Boolean = input.atEnd && indentStack.isEmpty
 
   lazy val (firstf: (() => SysMLLexer.Token), restf: (() => Reader[SysMLLexer.Token]), posf: (() => Position)) = if (input.atEnd) indentStack match {
@@ -70,4 +72,6 @@ class IndentationIgnorer(input: Reader[SysMLLexer.Token], level: Int = 0) extend
   def first: SysMLLexer.Token = firstf()
   def rest: Reader[SysMLLexer.Token] = restf()
   def pos: Position = posf()
+  override def source = input.source
+  override def offset: Int = input.offset
 }

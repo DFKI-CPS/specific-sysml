@@ -18,6 +18,7 @@ object Test extends App {
       val synth = new Synthesis("example")
       synth.structure(b)
       synth.naming(b)
+      synth.parseConstraints(b)
       synth.save()
     case SysMLParsers.NoSuccess(msg,i) =>
       println(s"$msg [${i.pos}]:\n${i.pos.longString}")

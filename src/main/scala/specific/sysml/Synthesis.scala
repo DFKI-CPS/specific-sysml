@@ -4,6 +4,8 @@ import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
+import org.eclipse.ocl.pivot
+import org.eclipse.ocl.pivot.utilities.ParserException
 import org.eclipse.papyrus.sysml
 import org.eclipse.papyrus.sysml.blocks.{BlocksFactory, BlocksPackage}
 import org.eclipse.papyrus.sysml.portandflows.{PortandflowsFactory, PortandflowsPackage}
@@ -11,14 +13,24 @@ import org.eclipse.uml2.uml
 import org.eclipse.uml2.uml.{Profile, PseudostateKind, UMLFactory}
 import org.eclipse.papyrus.sysml._
 import org.eclipse.papyrus.sysml.util.SysmlResource
-import org.eclipse.uml2.common.util.UML2Util
-import org.eclipse.uml2.uml.util.{UMLUtil, UMLValidator}
+import org.eclipse.uml2.uml.util.UMLValidator
 import specific.sysml.Types.PrimitiveType
 
-import scala.util.parsing.input.{NoPosition, Position}
+import scala.util.parsing.input.Position
 import scala.collection.JavaConverters._
 
+object Synthesis {
+  var initialized = false
+  def init() = if (!initialized) {
+    pivot.uml.UMLStandaloneSetup.init()
+    org.eclipse.ocl.xtext.essentialocl.EssentialOCLStandaloneSetup.doSetup()
+    org.eclipse.ocl.pivot.model.OCLstdlib.install()
+    initialized = true
+  }
+}
+
 class Synthesis(name: String) {
+  Synthesis.init()
   /**
     * SysML
     * ModelElements
@@ -36,6 +48,7 @@ class Synthesis(name: String) {
 
   private val sysml_profile_uri = URI.createURI(getClass.getClassLoader.getResource("model/SysML.profile.uml").toString)
   private val library = new ResourceSetImpl
+
   library.getURIConverter.getURIMap.put(URI.createURI(SysmlResource.SYSML_PROFILE_URI), sysml_profile_uri)
   org.eclipse.uml2.uml.resources.util.UMLResourcesUtil.init(library)
   uml.resources.util.UMLResourcesUtil.initPackageRegistry(library.getPackageRegistry)
@@ -66,6 +79,19 @@ class Synthesis(name: String) {
       pappl.setAppliedProfile(x)
     case _ =>
   }
+
+  val chain = new DiagnosticChain {
+    def merge(diagnostic: Diagnostic) =
+      println(s"merge: $diagnostic")
+    def addAll(diagnostic: Diagnostic) =
+      println(s"addAll: $diagnostic")
+    def add(diagnostic: Diagnostic) =
+      println(s"add: $diagnostic")
+  }
+
+  val context = new util.HashMap[AnyRef,AnyRef]()
+
+  val validate = new UMLValidator
 
   //////////////////////////////////////////////////////////////////////////////
   /// STRUCTURE  ///////////////////////////////////////////////////////////////
@@ -285,8 +311,15 @@ class Synthesis(name: String) {
   def naming(elem: Element): Unit = elem match {
     case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
       content.foreach(naming)
+      elem.uml.collect {
+        case pkg: uml.Package => validate.validatePackage(pkg,chain,context)
+      }
     case b: Block =>
       b.members.foreach(naming)
+      elem.uml.collect {
+        case blk: sysml.blocks.Block =>
+          validate.validateClass(blk.getBase_Class,chain,context)
+      }
     case Operation(name,tpe,params,constraints) =>
       elem.uml.collect {
         case op: uml.Operation =>
@@ -297,6 +330,10 @@ class Synthesis(name: String) {
           }
       }
       params.map(naming)
+      elem.uml.collect {
+        case op: uml.Operation =>
+          validate.validateOperation(op,chain,context)
+      }
     case Parameter(name,tpe) =>
       elem.uml.collect {
         case op: uml.Parameter =>
@@ -306,7 +343,6 @@ class Synthesis(name: String) {
     case Reference(name,tpe,opposite,constraint) =>
       elem.uml.collect {
         case op: uml.Property =>
-
           resolveTypeName(op.getClass_,tpe.name).foreach{ tpe =>
             op.setType(tpe)
             val opp = (opposite, tpe) match {
@@ -365,8 +401,65 @@ class Synthesis(name: String) {
   }
 
   //////////////////////////////////////////////////////////////////////////////
-  /// TYPE CHECKING  ///////////////////////////////////////////////////////////
+  /// CONSTRAINT PARSING  //////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
+
+  lazy val ocl = {
+
+    val ocl = pivot.utilities.OCL.newInstance(pivot.utilities.OCL.NO_PROJECTS,library)
+    ocl
+  }
+
+  def parseConstraints(elem: Element): Unit = elem match {
+    case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
+      content.foreach(parseConstraints)
+    case b: Block =>
+      b.members.foreach {
+        case UnprocessedConstraint(str) =>
+          val name = b.uml.collect {
+            case c: uml.Class =>
+              println(c)
+              try {
+                val cls = ocl.getMetamodelManager.getASOf(classOf[org.eclipse.ocl.pivot.Class],c)
+                val help = ocl.createOCLHelper(cls)
+                val constr = help.createInvariant(str)
+                println(constr)
+              } catch {
+                case e: ParserException =>
+                  println(e.getDiagnostic.toString)
+                  //e.printStackTrace()
+              }
+          }
+        case other => // parseConstraints(other)
+      }
+    case Operation(name,tpe,params,constraints) =>
+      params.foreach(parseConstraints)
+      constraints.foreach(parseConstraints)
+    case Reference(name,tpe,opposite,constraint) =>
+      constraint.foreach(parseConstraints)
+    case Property(name,tpe,constraint) =>
+    case Port(name,dir,tpe) =>
+    case Value(name,tpe) =>
+    case UnprocessedConstraint(tokens) =>
+      //ocl.parse(new OCLInput(tokens))
+      println(tokens)
+      println(elem.pos.longString)
+    case StateMachine(name,states) =>
+      states.foreach(parseConstraints)
+    case ConcreteState(name,tss,initial) =>
+      tss.foreach(parseConstraints)
+    case Choice(tss) =>
+      tss.foreach(parseConstraints)
+    case Transition(trigger,guard,action,UnresolvedTargetStateName(name)) =>
+      trigger.foreach(parseConstraints)
+    case Transition(trigger,guard,action,InlineTargetState(st)) =>
+      trigger.foreach(parseConstraints)
+      parseConstraints(st)
+    case Trigger.Receive(portName, variable) =>
+    case Trigger.Timeout(_) =>
+    case other =>
+      error(elem.pos, s"could not synthesize $other")
+  }
 
   private def warn(pos: Position, message: String) =
     println(s"WARN: $pos: $message\n${pos.longString}")
@@ -376,16 +469,7 @@ class Synthesis(name: String) {
     println(s"ERROR: $pos: $message\n${pos.longString}")
 
   def save() = {
-    val chain = new DiagnosticChain {
-      def merge(diagnostic: Diagnostic) =
-        println(s"merge: $diagnostic")
-      def addAll(diagnostic: Diagnostic) =
-        println(s"addAll: $diagnostic")
-      def add(diagnostic: Diagnostic) =
-        println(s"add: $diagnostic")
-    }
-    val validate = new UMLValidator
-    validate.validateModel(model,chain,new util.HashMap[AnyRef,AnyRef]())
+    validate.validateModel(model,chain,new util.HashMap)
     resource.save(mapAsJavaMap(Map.empty[Any,Any]))
   }
 }

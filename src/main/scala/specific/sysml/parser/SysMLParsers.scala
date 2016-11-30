@@ -30,7 +30,7 @@ object SysMLParsers extends OclParsers {
   }
 
   def topLevelConstraint: Parser[UnprocessedConstraint] =
-    CONTEXT ~! ignoreIndentation((allExcept(CONTEXT,SimpleName("block"),DEDENT,SEPARATOR) | SEPARATOR ~ not(CONTEXT|"block"|DEDENT)).*) ^^ (x => UnprocessedConstraint(None,x))
+    captureConstraint(CONTEXT ~! ignoreIndentation((allExcept(CONTEXT,SimpleName("block"),DEDENT,SEPARATOR) | SEPARATOR ~ not(CONTEXT|"block"|DEDENT)).*))
 
   def diagram: Parser[Diagram] =
     ( diagramKind ~ enclosed(LEFT_SQUARE_BRACKET,elementType,RIGHT_SQUARE_BRACKET) ~ pathName[NamedElement] ~ enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ) >> {
@@ -83,9 +83,11 @@ object SysMLParsers extends OclParsers {
     ( state ^^ InlineTargetState
     | simpleName ^^ UnresolvedTargetStateName )
 
-  def guard: Parser[UnprocessedConstraint] = LEFT_SQUARE_BRACKET ~> ((allExcept(RIGHT_SQUARE_BRACKET).* ^^ (UnprocessedConstraint(None,_))) <~ RIGHT_SQUARE_BRACKET)
+  def guard: Parser[UnprocessedConstraint] =
+    LEFT_SQUARE_BRACKET ~> constraintContent(RIGHT_SQUARE_BRACKET) <~ RIGHT_SQUARE_BRACKET
 
-  def action: Parser[UnprocessedConstraint] = SLASH ~> (allExcept(RIGHT_ARROW).* ^^ (UnprocessedConstraint(None,_)))
+  def action: Parser[UnprocessedConstraint] =
+    SLASH ~> constraintContent(RIGHT_ARROW)
 
   def trigger: Parser[Trigger] =
   ( "after" ~> duration ^^ Trigger.Timeout
@@ -148,8 +150,20 @@ object SysMLParsers extends OclParsers {
 
   def ignoreIndentation[T](parser: => Parser[T]) = Parser(input => parser(new IndentationIgnorer(input)))
 
+  def captureConstraint(parser: Parser[Any]) = Parser[UnprocessedConstraint] { input =>
+    val start = input.pos
+    val first = input.offset
+    parser(input) match {
+      case Success(_,next) =>
+        val c = UnprocessedConstraint(input.source.subSequence(first, next.offset).toString)
+        c.pos = start
+        Success(c,next)
+      case err: NoSuccess => err
+    }
+  }
+
   def operationConstraint: Parser[UnprocessedConstraint] =
-    ((PRE | POST) ~! opt(name) ~! COLON) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).* ^^ (UnprocessedConstraint(None,_))
+    captureConstraint(((PRE | POST | BODY) ~! opt(name) ~! COLON) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).*)
 
   def parameterList: Parser[Seq[Parameter]] =
     named("parameter list", enclosed(LEFT_PARENS, repsep(parameter,COMMA), RIGHT_PARENS))
@@ -194,9 +208,19 @@ object SysMLParsers extends OclParsers {
       case nps~mult => TypeAnnotation(nps, mult.getOrElse(defaultMultiplicity))
     })
 
-  def constraint: Parser[UnprocessedConstraint] = LEFT_BRACE ~! ( rep(elem("constraint content",_ != RIGHT_BRACE)) <~ RIGHT_BRACE ) ^^ {
-    case _~cs => UnprocessedConstraint(None,cs.toString)
+
+  def constraintContent(until: Elem) = Parser[UnprocessedConstraint] { input =>
+    val start = input.pos
+    val first = input.offset
+    var r = input
+    while (!r.atEnd && r.first != until) { r = r.rest }
+    val last = r.offset
+    val res = UnprocessedConstraint(input.source.subSequence(first,last).toString)
+    res.pos = start
+    Success(res,r)
   }
+
+  def constraint: Parser[UnprocessedConstraint] = LEFT_BRACE ~! (constraintContent(RIGHT_BRACE) <~ RIGHT_BRACE ) ^^ (_._2)
 
   def name: Parser[PositionedName] = positioned(named("identifier", acceptMatch("identifier", {
     case n: OclTokens.SimpleName => PositionedName(n.chars)
