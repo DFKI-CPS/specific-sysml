@@ -1,0 +1,18 @@
+<ivysettings>
+    <settings defaultResolver="chain"/>
+    <resolvers>
+        <chain name="chain">
+            <ibiblio name="central" m2compatible="true"/>
+            <updatesite name="eclipse-neon" url="http://download.eclipse.org/releases/neon/"/>
+            <updatesite name="eclipse-neon-updates" url="http://download.eclipse.org/eclipse/updates/4.6/"/>
+            <updatesite name="eclipse-mdt" url="http://download.eclipse.org/modeling/mdt/updates"/>
+            <updatesite name="eclipse-emf" url="http://download.eclipse.org/modeling/emf/updates/"/>
+            <updatesite name="eclipse-papyrus" url="http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon/"/>
+            <updatesite name="eclipse-ocl" url="http://download.eclipse.org/modeling/mdt/ocl/updates/"/>
+            <updatesite name="eclipse-uml" url="http://download.eclipse.org/modeling/mdt/uml2/updates/"/>
+        </chain>
+    </resolvers>
+    <modules>
+        <module organization="bundle" name="org.eclipse.emf.mapping.ecore2xml" resolver="eclipse-neon"/>
+    </modules>
+</ivysettings>
