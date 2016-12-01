@@ -5,12 +5,14 @@ import java.util
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
 import org.eclipse.ocl.pivot
+import org.eclipse.ocl.pivot.uml.internal.library.UMLStereotypeProperty
 import org.eclipse.ocl.pivot.utilities.ParserException
+import org.eclipse.ocl.uml.util.OCLUMLUtil
 import org.eclipse.papyrus.sysml
 import org.eclipse.papyrus.sysml.blocks.{BlocksFactory, BlocksPackage}
 import org.eclipse.papyrus.sysml.portandflows.{PortandflowsFactory, PortandflowsPackage}
 import org.eclipse.uml2.uml
-import org.eclipse.uml2.uml.{Profile, PseudostateKind, UMLFactory}
+import org.eclipse.uml2.uml.{Profile, PseudostateKind, Stereotype, UMLFactory, UMLPackage}
 import org.eclipse.papyrus.sysml._
 import org.eclipse.papyrus.sysml.util.SysmlResource
 import org.eclipse.uml2.uml.util.UMLValidator
@@ -418,11 +420,12 @@ class Synthesis(name: String) {
         case UnprocessedConstraint(str) =>
           val name = b.uml.collect {
             case c: uml.Class =>
-              println(c)
               try {
                 val cls = ocl.getMetamodelManager.getASOf(classOf[org.eclipse.ocl.pivot.Class],c)
-                val help = ocl.createOCLHelper(cls)
-                val constr = help.createInvariant(str)
+                val constr = ocl.createInvariant(cls,str)
+                val inv = umlFactory.createConstraint()
+                val x = ocl.getMetamodelManager.getEcoreOfPivot(classOf[org.eclipse.ocl.uml.ExpressionInOCL],constr)
+                inv.setSpecification(x)
                 println(constr)
               } catch {
                 case e: ParserException =>
