@@ -424,11 +424,6 @@ class Synthesis(name: String) {
               try {
                 val cls = ocl.getMetamodelManager.getASOf(classOf[org.eclipse.ocl.pivot.Class],c)
                 val constr = ocl.createInvariant(cls,str)
-                val visit = new Visitor {
-
-                }
-                constr.acc
-                inv.setSpecification(x)
                 println(constr)
               } catch {
                 case e: ParserException =>

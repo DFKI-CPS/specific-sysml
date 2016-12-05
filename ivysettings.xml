@@ -1,18 +1,23 @@
 <ivysettings>
-    <settings defaultResolver="chain"/>
+    <settings defaultResolver="central"/>
     <resolvers>
-        <chain name="chain">
-            <ibiblio name="central" m2compatible="true"/>
-            <updatesite name="eclipse-neon" url="http://download.eclipse.org/releases/neon/"/>
-            <updatesite name="eclipse-neon-updates" url="http://download.eclipse.org/eclipse/updates/4.6/"/>
-            <updatesite name="eclipse-mdt" url="http://download.eclipse.org/modeling/mdt/updates"/>
-            <updatesite name="eclipse-emf" url="http://download.eclipse.org/modeling/emf/updates/"/>
-            <updatesite name="eclipse-papyrus" url="http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon/"/>
-            <updatesite name="eclipse-ocl" url="http://download.eclipse.org/modeling/mdt/ocl/updates/"/>
-            <updatesite name="eclipse-uml" url="http://download.eclipse.org/modeling/mdt/uml2/updates/"/>
+        <ibiblio name="central" m2compatible="true"/>
+        <chain name="eclipse">
+            <updatesite name="eclipse-neon-updates" url="http://download.eclipse.org/eclipse/updates/4.6/" force="true"/>
+            <updatesite name="eclipse-mdt" url="http://download.eclipse.org/modeling/mdt/updates/releases/" force="true"/>
+            <updatesite name="eclipse-papyrus" url="http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon/" force="true"/>
+            <updatesite name="eclipse-ocl" url="http://download.eclipse.org/modeling/mdt/ocl/updates/releases/6.2.1/" force="true"/>
+            <updatesite name="eclipse-uml" url="http://download.eclipse.org/modeling/mdt/uml2/updates/" force="true"/>
+            <updatesite name="eclipse-xtext" url="http://download.eclipse.org/modeling/tmf/xtext/updates/composite/releases/" force="true"/>
+            <updatesite name="eclipse-emf" url="http://download.eclipse.org/modeling/emf/updates/" force="true"/>
         </chain>
     </resolvers>
+    <conflict-managers>
+        <latest-cm name="osgi-cm" latest="latest-osgi"/>
+    </conflict-managers>
     <modules>
-        <module organization="bundle" name="org.eclipse.emf.mapping.ecore2xml" resolver="eclipse-neon"/>
+        <module organisation="bundle" resolver="eclipse" conflict-manager="osgi-cm"/>
+        <module organisation="package" resolver="eclipse" conflict-manager="osgi-cm"/>
+        <module organisation="service" resolver="eclipse" conflict-manager="osgi-cm"/>
     </modules>
 </ivysettings>
