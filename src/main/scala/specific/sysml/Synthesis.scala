@@ -6,6 +6,7 @@ import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
 import org.eclipse.ocl.pivot
 import org.eclipse.ocl.pivot.uml.internal.library.UMLStereotypeProperty
+import org.eclipse.ocl.pivot.util.Visitor
 import org.eclipse.ocl.pivot.utilities.ParserException
 import org.eclipse.ocl.uml.util.OCLUMLUtil
 import org.eclipse.papyrus.sysml
@@ -423,9 +424,6 @@ class Synthesis(name: String) {
               try {
                 val cls = ocl.getMetamodelManager.getASOf(classOf[org.eclipse.ocl.pivot.Class],c)
                 val constr = ocl.createInvariant(cls,str)
-                val inv = umlFactory.createConstraint()
-                val x = ocl.getMetamodelManager.getEcoreOfPivot(classOf[org.eclipse.ocl.uml.ExpressionInOCL],constr)
-                inv.setSpecification(x)
                 println(constr)
               } catch {
                 case e: ParserException =>

@@ -1,0 +1,23 @@
+<ivysettings>
+    <settings defaultResolver="central"/>
+    <resolvers>
+        <ibiblio name="central" m2compatible="true"/>
+        <chain name="eclipse">
+            <updatesite name="eclipse-neon-updates" url="http://download.eclipse.org/eclipse/updates/4.6/" force="true"/>
+            <updatesite name="eclipse-mdt" url="http://download.eclipse.org/modeling/mdt/updates/releases/" force="true"/>
+            <updatesite name="eclipse-papyrus" url="http://download.eclipse.org/modeling/mdt/papyrus/updates/releases/neon/" force="true"/>
+            <updatesite name="eclipse-ocl" url="http://download.eclipse.org/modeling/mdt/ocl/updates/releases/6.2.1/" force="true"/>
+            <updatesite name="eclipse-uml" url="http://download.eclipse.org/modeling/mdt/uml2/updates/" force="true"/>
+            <updatesite name="eclipse-xtext" url="http://download.eclipse.org/modeling/tmf/xtext/updates/composite/releases/" force="true"/>
+            <updatesite name="eclipse-emf" url="http://download.eclipse.org/modeling/emf/updates/" force="true"/>
+        </chain>
+    </resolvers>
+    <conflict-managers>
+        <latest-cm name="osgi-cm" latest="latest-osgi"/>
+    </conflict-managers>
+    <modules>
+        <module organisation="bundle" resolver="eclipse" conflict-manager="osgi-cm"/>
+        <module organisation="package" resolver="eclipse" conflict-manager="osgi-cm"/>
+        <module organisation="service" resolver="eclipse" conflict-manager="osgi-cm"/>
+    </modules>
+</ivysettings>
