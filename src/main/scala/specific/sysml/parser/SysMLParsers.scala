@@ -75,9 +75,9 @@ object SysMLParsers extends OclParsers {
 
   def state: Parser[State] =
     ( ("initial".? <~ "state") ~ name ~ indented(transition, "transition") ^^ { case i~n~ts => ConcreteState(n.name,ts,i.isDefined).at(n) }
-    | "choose" ~> indented(transition, "transition") ^^ Choice )
+    | positioned("choose" ~> indented(transition, "transition") ^^ Choice) )
 
-  def transition: Parser[Transition] = opt(trigger) ~ opt(guard) ~ opt(action) ~ (RIGHT_ARROW ~>  transitionTarget) ^^ { case t~g~a~s => Transition(t,g,a,s) }
+  def transition: Parser[Transition] = positioned(opt(trigger) ~ opt(guard) ~ opt(action) ~ (RIGHT_ARROW ~>  transitionTarget) ^^ { case t~g~a~s => Transition(t,g,a,s) })
 
   //def shortConstraint
 
@@ -92,7 +92,7 @@ object SysMLParsers extends OclParsers {
     SLASH ~> constraintContent(ConstraintType.Query, RIGHT_ARROW)
 
   def trigger: Parser[Trigger] =
-  ( "after" ~> duration ^^ Trigger.Timeout
+  positioned("after" ~> duration ^^ Trigger.Timeout
   | "receive" ~> name ~ opt(LEFT_PARENS ~> (name <~ RIGHT_PARENS)) ^^ { case p~v => Trigger.Receive(p.name,v.map(_.name)).at(p) } )
 
   def duration: Parser[Duration] = integer ~ timeUnit ^^ { case i ~ n => Duration(i.toLong,n).toCoarsest }
@@ -110,7 +110,7 @@ object SysMLParsers extends OclParsers {
     "ports" ~> indented(port, "port") ^^ PortsCompartment
 
   def port: Parser[Port] =
-  ( flowDirection ~! name ~ typing ^^ { case dir ~ n ~ t => Port(n.name,Some(dir),t).at(n) }
+  positioned( flowDirection ~! name ~ typing ^^ { case dir ~ n ~ t => Port(n.name,Some(dir),t).at(n) }
   | name ~ typing ^^ { case n ~ t => Port(n.name,None,t).at(n) } )
 
   def flowDirection: Parser[FlowDirection] =
@@ -163,7 +163,7 @@ object SysMLParsers extends OclParsers {
     val first = input.offset
     parser(input) match {
       case Success(_,next) =>
-        val c = UnprocessedConstraint(tpe, input.source.subSequence(first, next.offset).toString)
+        val c = UnprocessedConstraint(tpe, input.source.subSequence(first + 1, next.offset).toString)
         c.pos = start
         Success(c,next)
       case err: NoSuccess => err
@@ -233,7 +233,7 @@ object SysMLParsers extends OclParsers {
     var r = input
     while (!r.atEnd && r.first != until) { r = r.rest }
     val last = r.offset
-    val res = UnprocessedConstraint(tpe, input.source.subSequence(first,last).toString)
+    val res = UnprocessedConstraint(tpe, input.source.subSequence(first + 1,last).toString)
     res.pos = start
     Success(res,r)
   }

@@ -3,7 +3,7 @@ package specific.sysml
 import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
-import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.{EAnnotation, EModelElement, EObject}
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
 import org.eclipse.ocl.expressions.{OCLExpression, Variable}
@@ -67,6 +67,14 @@ class Synthesis(name: String) {
 
   val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"),true)
 
+  def addPosAnnotation(elem: EModelElement, pos: Position) = {
+    val annon = ecoreFactory.createEAnnotation()
+    annon.setSource("http://www.dfki.de/specific/SysML")
+    annon.getDetails.put("line",pos.line.toString)
+    annon.getDetails.put("column",pos.column.toString)
+    elem.getEAnnotations.add(annon)
+  }
+
   private val resource = library.createResource(URI.createFileURI(s"./$name.uml"))
   private val umlFactory = UMLFactory.eINSTANCE
   private val ecoreFactory = org.eclipse.emf.ecore.EcoreFactory.eINSTANCE
@@ -115,6 +123,7 @@ class Synthesis(name: String) {
   def structure(owner: uml.Package, member: Element): Unit = member match {
     case Block(name, compartments, comments) =>
       val c = umlFactory.createClass()
+      addPosAnnotation(c,member.pos)
       val b = blocksFactory.createBlock()
       b.setBase_Class(c)
       c.setName(name)
@@ -130,6 +139,7 @@ class Synthesis(name: String) {
     case Operation(name, tpe, params, constraints) =>
       val c = owner.getBase_Class
       val op = umlFactory.createOperation()
+      addPosAnnotation(op,member.pos)
       op.setName(name)
       c.getOwnedOperations.add(op)
       member.uml = Some(op)
@@ -137,6 +147,7 @@ class Synthesis(name: String) {
     case Reference(name,tpe,oppositeName,constraint) =>
       val c = owner.getBase_Class
       val p = umlFactory.createProperty()
+      addPosAnnotation(p,member.pos)
       p.setIsUnique(tpe.multiplicity.isUnique)
       p.setIsOrdered(tpe.multiplicity.isOrdered)
       p.setLower(tpe.multiplicity.lower.toInt)
@@ -147,6 +158,7 @@ class Synthesis(name: String) {
     case Value(name,tpe) =>
       val c = owner.getBase_Class
       val p = umlFactory.createProperty()
+      addPosAnnotation(p,member.pos)
       p.setLower(tpe.multiplicity.lower.toInt)
       p.setUpper(tpe.multiplicity.upper.value.toInt)
       p.setName(name)
@@ -155,6 +167,7 @@ class Synthesis(name: String) {
     case Property(name,tpe,constraint) =>
       val c = owner.getBase_Class
       val p = umlFactory.createProperty()
+      addPosAnnotation(p,member.pos)
       p.setLower(tpe.multiplicity.lower.toInt)
       p.setUpper(tpe.multiplicity.upper.value.toInt)
       p.setName(name)
@@ -164,6 +177,7 @@ class Synthesis(name: String) {
       val c = owner.getBase_Class
       val b = umlFactory.createPort()
       val p = portsFactory.createFlowPort()
+      addPosAnnotation(b,member.pos)
       b.setLower(tpe.multiplicity.lower.toInt)
       b.setUpper(tpe.multiplicity.upper.value.toInt)
       direction.foreach(direction =>
@@ -181,6 +195,7 @@ class Synthesis(name: String) {
     case StateMachine(name, states) =>
       val c = owner.getBase_Class
       val stm = umlFactory.createStateMachine()
+      addPosAnnotation(stm,member.pos)
       val reg = umlFactory.createRegion()
       stm.setName(name)
       reg.setName(name)
@@ -197,6 +212,7 @@ class Synthesis(name: String) {
   def structure(op: uml.Operation, param: Parameter): Unit = param match {
     case Parameter(name, tpe) =>
       val p = umlFactory.createParameter()
+      addPosAnnotation(p,param.pos)
       p.setName(name)
       param.uml = Some(p)
       op.getOwnedParameters.add(p)
@@ -205,6 +221,7 @@ class Synthesis(name: String) {
   def structure(stm: uml.Region, state: State): Option[uml.Vertex] = state match {
     case ConcreteState(name, transitions, isInitial) =>
       val st = umlFactory.createState()
+      addPosAnnotation(st,state.pos)
       st.setName(name)
       stm.getSubvertices.add(st)
       transitions.map(ts => structure(st, ts))
@@ -221,6 +238,7 @@ class Synthesis(name: String) {
       Some(st)
     case Choice(transitions) =>
       val st = umlFactory.createPseudostate()
+      addPosAnnotation(st,state.pos)
       st.setKind(PseudostateKind.CHOICE_LITERAL)
       stm.getSubvertices.add(st)
       transitions.map(ts => structure(st, ts))
@@ -236,6 +254,7 @@ class Synthesis(name: String) {
       val reg = source.getContainer
       structure(reg, st).foreach { st =>
         val ts = umlFactory.createTransition()
+        addPosAnnotation(ts,trans.pos)
         trans.uml = Some(ts)
         ts.setSource(source)
         ts.setTarget(st)
@@ -245,6 +264,7 @@ class Synthesis(name: String) {
     case Transition(trigger, guard, action, UnresolvedTargetStateName(name)) =>
       val reg = source.getContainer
       val ts = umlFactory.createTransition()
+      addPosAnnotation(ts,trans.pos)
       trans.uml = Some(ts)
       ts.setSource(source)
       reg.getTransitions.add(ts)
@@ -436,7 +456,7 @@ class Synthesis(name: String) {
     val environmentFactory: UMLEnvironmentFactory = new UMLEnvironmentFactory(library)
     val env = environmentFactory.createEnvironment()
     Environment.Registry.INSTANCE.registerEnvironment(env)
-    val ocl = OCL.newInstance(environmentFactory,resource)
+    val ocl = OCL.newInstance(environmentFactory)
     ocl
   }
 
@@ -447,14 +467,21 @@ class Synthesis(name: String) {
       content.foreach(parseConstraints)
     case b: Block =>
       b.members.foreach {
-        case UnprocessedConstraint(tpe,str) =>
+        case uc@UnprocessedConstraint(tpe,str) =>
           b.uml.collect {
             case c: uml.Class =>
               try {
                 assert(tpe == ConstraintType.Inv)
                 oclHelper.setContext(c)
                 val constr = oclHelper.createInvariant(str)
-                model.getPackagedElements.add(constr)
+                val xc = umlFactory.createConstraint()
+                addPosAnnotation(xc,uc.pos)
+                val xp = umlFactory.createOpaqueExpression()
+                xp.getBodies.add(str)
+                xp.getLanguages.add("OCL")
+                xc.setSpecification(xp)
+                xc.getConstrainedElements.add(c)
+                c.getOwnedRules.add(xc)
               } catch {
                 case e: ParserException =>
                   println(e.getDiagnostic.toString)
@@ -465,7 +492,7 @@ class Synthesis(name: String) {
       }
     case Operation(name,tpe,params,constraints) =>
       constraints.foreach {
-        case UnprocessedConstraint(tpe,str) =>
+        case uc@UnprocessedConstraint(tpe,str) =>
           val name = elem.uml.collect {
             case op: uml.Operation =>
               try {
@@ -478,7 +505,14 @@ class Synthesis(name: String) {
                   case ConstraintType.Post =>
                     oclHelper.createPostcondition(str)
                 }
-                //model.getPackagedElements.add(constr)
+                val xc = umlFactory.createConstraint()
+                addPosAnnotation(xc,uc.pos)
+                val xp = umlFactory.createOpaqueExpression()
+                xp.getBodies.add(str)
+                xp.getLanguages.add("OCL")
+                xc.setSpecification(xp)
+                xc.getConstrainedElements.add(op)
+                op.getOwnedRules.add(xc)
               } catch {
                 case e: ParserException =>
                   e.getCause.printStackTrace()

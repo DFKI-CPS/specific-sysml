@@ -53,7 +53,7 @@ block Door
           [ p.admitted(this)     ] / accept(p) -> Accepting
           [ not p.admitted(this) ] / refuse(p) -> Refusing
       state Accepting
-        after 30000 ms                -> Waiting
+        after 30000 ms           -> Waiting
         receive passing / pass_thru() -> Waiting
       state Refusing
         after 30 seconds -> Waiting
