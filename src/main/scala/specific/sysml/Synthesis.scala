@@ -3,17 +3,20 @@ package specific.sysml
 import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
+import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
-import org.eclipse.ocl.pivot
-import org.eclipse.ocl.pivot.uml.internal.library.UMLStereotypeProperty
-import org.eclipse.ocl.pivot.util.Visitor
-import org.eclipse.ocl.pivot.utilities.ParserException
-import org.eclipse.ocl.uml.util.OCLUMLUtil
+import org.eclipse.ocl.expressions.{OCLExpression, Variable}
+import org.eclipse.ocl.types.OCLStandardLibrary
+import org.eclipse.ocl.uml.internal.OCLStandardLibraryImpl
+import org.eclipse.ocl.{AbstractEnvironment, AbstractEnvironmentFactory, AbstractTypeResolver, Environment, EnvironmentFactory, EvaluationEnvironment, ParserException, TypeResolver}
+import org.eclipse.ocl.uml.{OCL, UMLEnvironment, UMLEnvironmentFactory, UMLOCLStandardLibrary}
+import org.eclipse.ocl.utilities.{OCLFactory, UMLReflection}
 import org.eclipse.papyrus.sysml
 import org.eclipse.papyrus.sysml.blocks.{BlocksFactory, BlocksPackage}
 import org.eclipse.papyrus.sysml.portandflows.{PortandflowsFactory, PortandflowsPackage}
 import org.eclipse.uml2.uml
-import org.eclipse.uml2.uml.{Profile, PseudostateKind, Stereotype, UMLFactory, UMLPackage}
+import org.eclipse.uml2.uml.{CallOperationAction, Class, Classifier, Constraint, Element, EnumerationLiteral, Operation, Package, Parameter, Profile, Property, PseudostateKind, SendSignalAction, State, UMLFactory}
 import org.eclipse.papyrus.sysml._
 import org.eclipse.papyrus.sysml.util.SysmlResource
 import org.eclipse.uml2.uml.util.UMLValidator
@@ -25,9 +28,9 @@ import scala.collection.JavaConverters._
 object Synthesis {
   var initialized = false
   def init() = if (!initialized) {
-    pivot.uml.UMLStandaloneSetup.init()
-    org.eclipse.ocl.xtext.essentialocl.EssentialOCLStandaloneSetup.doSetup()
-    org.eclipse.ocl.pivot.model.OCLstdlib.install()
+    //pivot.uml.UMLStandaloneSetup.init()
+    //org.eclipse.ocl.xtext.essentialocl.EssentialOCLStandaloneSetup.doSetup()
+    //org.eclipse.ocl.pivot.model.OCLstdlib.install()
     initialized = true
   }
 }
@@ -59,8 +62,8 @@ class Synthesis(name: String) {
   library.getPackageRegistry put (sysml.SysmlPackage.eNS_URI, sysml.SysmlPackage.eINSTANCE)
   library.getPackageRegistry put (BlocksPackage.eNS_URI, BlocksPackage.eINSTANCE)
   library.getPackageRegistry put (PortandflowsPackage.eNS_URI, PortandflowsPackage.eINSTANCE)
+
   private val primitives = library.getResource(URI.createURI(uml.resource.UMLResource.UML_PRIMITIVE_TYPES_LIBRARY_URI),true)
-  private val sysmlProfiles = (URI.createURI(sysml.util.SysmlResource.SYSML_PROFILE_URI),true)
 
   val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"),true)
 
@@ -185,7 +188,7 @@ class Synthesis(name: String) {
       stm.getRegions.add(reg)
       states.map(st => structure(reg, st))
       member.uml = Some(stm)
-    case UnprocessedConstraint(_) =>
+    case UnprocessedConstraint(_,_) =>
       // TODO
     case other =>
       error(other.pos, s"could not synthesize $other")
@@ -324,8 +327,9 @@ class Synthesis(name: String) {
           validate.validateClass(blk.getBase_Class,chain,context)
       }
     case Operation(name,tpe,params,constraints) =>
-      elem.uml.collect {
+      if (tpe.name != ResolvedName(Types.Unit)) elem.uml.collect {
         case op: uml.Operation =>
+          op.setIsQuery(true)
           resolveTypeName(op.getClass_,tpe.name).fold {
             error(tpe.name.pos, s"unknown type $tpe")
           } { tpe =>
@@ -373,7 +377,7 @@ class Synthesis(name: String) {
             op.setType(tpe)
           }
       }
-    case UnprocessedConstraint(_) =>
+    case UnprocessedConstraint(_,_) =>
     case StateMachine(name,states) =>
       states.map(naming)
     case ConcreteState(name,tss,initial) =>
@@ -407,43 +411,91 @@ class Synthesis(name: String) {
   /// CONSTRAINT PARSING  //////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
-  lazy val ocl = {
+  /*def attachConstraint(e: uml.Element, tpe: ConstraintType, c: pivot.ExpressionInOCL) = {
+    c.get
+    c.getBody
+    resource.getContents.add(c)
+    println(c)
+  }*/
 
-    val ocl = pivot.utilities.OCL.newInstance(pivot.utilities.OCL.NO_PROJECTS,library)
+  type UMLEnvironmentT = Environment[
+    uml.Package,
+    uml.Classifier,
+    uml.Operation,
+    uml.Property,
+    uml.EnumerationLiteral,
+    uml.Parameter,
+    uml.State,
+    uml.CallOperationAction,
+    uml.SendSignalAction,
+    uml.Constraint,
+    uml.Class,
+    EObject]
+
+  lazy val ocl = {
+    val environmentFactory: UMLEnvironmentFactory = new UMLEnvironmentFactory(library)
+    val env = environmentFactory.createEnvironment()
+    Environment.Registry.INSTANCE.registerEnvironment(env)
+    val ocl = OCL.newInstance(environmentFactory,resource)
     ocl
   }
+
+  lazy val oclHelper = ocl.createOCLHelper()
 
   def parseConstraints(elem: Element): Unit = elem match {
     case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
       content.foreach(parseConstraints)
     case b: Block =>
       b.members.foreach {
-        case UnprocessedConstraint(str) =>
-          val name = b.uml.collect {
+        case UnprocessedConstraint(tpe,str) =>
+          b.uml.collect {
             case c: uml.Class =>
               try {
-                val cls = ocl.getMetamodelManager.getASOf(classOf[org.eclipse.ocl.pivot.Class],c)
-                val constr = ocl.createInvariant(cls,str)
-                println(constr)
+                assert(tpe == ConstraintType.Inv)
+                oclHelper.setContext(c)
+                val constr = oclHelper.createInvariant(str)
+                model.getPackagedElements.add(constr)
               } catch {
                 case e: ParserException =>
                   println(e.getDiagnostic.toString)
                   //e.printStackTrace()
               }
           }
-        case other => // parseConstraints(other)
+        case other => parseConstraints(other)
       }
     case Operation(name,tpe,params,constraints) =>
-      params.foreach(parseConstraints)
-      constraints.foreach(parseConstraints)
+      constraints.foreach {
+        case UnprocessedConstraint(tpe,str) =>
+          val name = elem.uml.collect {
+            case op: uml.Operation =>
+              try {
+                oclHelper.setOperationContext(op.getClass_,op)
+                val constr = tpe match {
+                  case ConstraintType.Pre =>
+                    oclHelper.createPrecondition(str)
+                  case ConstraintType.Body =>
+                    oclHelper.createBodyCondition(str)
+                  case ConstraintType.Post =>
+                    oclHelper.createPostcondition(str)
+                }
+                //model.getPackagedElements.add(constr)
+              } catch {
+                case e: ParserException =>
+                  e.getCause.printStackTrace()
+                  println(e.getMessage)
+                  println(e.getDiagnostic.toString)
+                //e.printStackTrace()
+              }
+          }
+      }
     case Reference(name,tpe,opposite,constraint) =>
       constraint.foreach(parseConstraints)
     case Property(name,tpe,constraint) =>
     case Port(name,dir,tpe) =>
     case Value(name,tpe) =>
-    case UnprocessedConstraint(tokens) =>
+    case UnprocessedConstraint(tpe,tokens) =>
       //ocl.parse(new OCLInput(tokens))
-      println(tokens)
+      println(tpe,tokens)
       println(elem.pos.longString)
     case StateMachine(name,states) =>
       states.foreach(parseConstraints)

@@ -1,9 +1,10 @@
 <dependencies>
   <exclude organization="(bundle|package)"
-  module="org\.eclipse\.(gmf|e4|jface|ant|jdt|pde|team|text|update).*" matcher="regexp"/>
+  module="org\.eclipse\.(gmf|e4|jface|ant|jdt|pde|team|text|update|equinox|osgi|core).*" matcher="regexp"/>
   <exclude organization="(bundle|package)"
   module="org\.eclipse\.equinox\.log" matcher="regexp"/>
   <exclude organization="bundle"  module=".*\.ui($|\..*)" matcher="regexp"/>
+  <exclude organization="bundle" module="org\.eclipse\.papyrus\.(emf\.facet|infra).*" matcher="regexp"/>
   <exclude organization="package" module="com.google.inject"/>
   <exclude organization="package" module="javax\.crypto.*" matcher="regexp"/>
   <exclude organization="package" module="org.osgi\..*" matcher="regexp"/>

@@ -26,18 +26,18 @@ object SysMLParsers extends OclParsers {
   })
 
   def diagramElementParsers(kind: DiagramKind): Parser[NamedElement] = kind match {
-    case DiagramKind.BlockDefinitionDiagram => named("block or constraint", block | topLevelConstraint)
+    case DiagramKind.BlockDefinitionDiagram => named("block or constraint", block)
   }
 
-  def topLevelConstraint: Parser[UnprocessedConstraint] =
-    captureConstraint(CONTEXT ~! ignoreIndentation((allExcept(CONTEXT,SimpleName("block"),DEDENT,SEPARATOR) | SEPARATOR ~ not(CONTEXT|"block"|DEDENT)).*))
+  /*def topLevelConstraint: Parser[UnprocessedConstraint] =
+    captureConstraint(CONTEXT ~! ignoreIndentation((allExcept(CONTEXT,SimpleName("block"),DEDENT,SEPARATOR) | SEPARATOR ~ not(CONTEXT|"block"|DEDENT)).*))*/
 
   def diagram: Parser[Diagram] =
     ( diagramKind ~ enclosed(LEFT_SQUARE_BRACKET,elementType,RIGHT_SQUARE_BRACKET) ~ pathName[NamedElement] ~ enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ) >> {
       case knd ~ tpe ~ en ~ dn => separated(diagramElementParsers(knd)) ^^ (elems => Diagram(knd,tpe,en.parts,dn.mkString(" "),elems))
     }
 
-  def pkg: Parser[Package] = PACKAGE ~> name ~ separated(block | constraint) ^^ {
+  def pkg: Parser[Package] = PACKAGE ~> name ~ separated(block) ^^ {
     case n ~ bs => Package(n.name,bs collect every[Block], bs collect every[UnprocessedConstraint], Nil).at(n)
   }
 
@@ -68,7 +68,7 @@ object SysMLParsers extends OclParsers {
     | "classifier" ~ "bahavior") ~> indented(stateMachine, "state machine") ^^ BehaviorCompartment
 
   def constraintsCompartment: Parser[ConstraintsCompartment] =
-    "constraints" ~> indented(constraint, "constraint") ^^ ConstraintsCompartment
+    "constraints" ~> indented(constraint(ConstraintType.Inv), "constraint") ^^ ConstraintsCompartment
 
   def stateMachine: Parser[StateMachine] =
     ("state" ~ "machine") ~> name ~ indented(state, "state") ^^ { case n~ss => StateMachine(n.name,ss).at(n) }
@@ -79,15 +79,17 @@ object SysMLParsers extends OclParsers {
 
   def transition: Parser[Transition] = opt(trigger) ~ opt(guard) ~ opt(action) ~ (RIGHT_ARROW ~>  transitionTarget) ^^ { case t~g~a~s => Transition(t,g,a,s) }
 
+  //def shortConstraint
+
   def transitionTarget: Parser[TransitionTarget] =
     ( state ^^ InlineTargetState
     | simpleName ^^ UnresolvedTargetStateName )
 
   def guard: Parser[UnprocessedConstraint] =
-    LEFT_SQUARE_BRACKET ~> constraintContent(RIGHT_SQUARE_BRACKET) <~ RIGHT_SQUARE_BRACKET
+    LEFT_SQUARE_BRACKET ~> constraintContent(ConstraintType.Query, RIGHT_SQUARE_BRACKET) <~ RIGHT_SQUARE_BRACKET
 
   def action: Parser[UnprocessedConstraint] =
-    SLASH ~> constraintContent(RIGHT_ARROW)
+    SLASH ~> constraintContent(ConstraintType.Query, RIGHT_ARROW)
 
   def trigger: Parser[Trigger] =
   ( "after" ~> duration ^^ Trigger.Timeout
@@ -120,7 +122,13 @@ object SysMLParsers extends OclParsers {
     "properties" ~> indented(property, "property") ^^ PropertiesCompartment
 
   def property: Parser[Property] =
-    name ~ typing ~ opt(constraint) ^^ { case name ~ tpe ~ c => Property(name.name,tpe,c).at(name) }
+    name ~ typing ~ opt(indented(ignoreIndentation(propertyConstraint).*,"constraint")) ^^ {
+      case name ~ tpe ~ cs => Property(name.name,tpe,cs.map(_.flatten).getOrElse(Nil)).at(name)
+    }
+
+  def propertyConstraint: Parser[UnprocessedConstraint] =
+    ((DERIVE | INIT) ^^ tokenToConstraintType) >> (tpe =>
+      captureConstraint(tpe,(opt(name) ~! COLON) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).*))
 
   def valuesCompartment: Parser[ValuesCompartment] =
     "values" ~> indented(value, "value") ^^ ValuesCompartment
@@ -132,8 +140,8 @@ object SysMLParsers extends OclParsers {
     "references" ~> indented(reference, "reference") ^^ ReferencesCompartment
 
   def reference: Parser[Reference] =
-    name ~ typing ~ opt(opposite) ~ opt(constraint) ^^ {
-      case name ~ tpe ~o~c => Reference(name.name,tpe,o.map(_.name),c).at(name)
+    name ~ typing ~ opt(opposite) ~ opt(indented(ignoreIndentation(propertyConstraint).*,"constraint")) ^^ {
+      case name ~ tpe ~ opp ~ cs => Reference(name.name,tpe,opp.map(_.name),cs.map(_.flatten).getOrElse(Nil)).at(name)
     }
 
   def opposite: Parser[PositionedName] = LEFT_ARROW ~> name
@@ -144,26 +152,37 @@ object SysMLParsers extends OclParsers {
   val defaultMultiplicity = Multiplicity(isOrdered = false, isUnique = false, 0, UnlimitedNatural.Finite(1))
 
   def operation: Parser[Operation] =
-    name ~ parameterList ~ optionalTyping ~ constraint.* ~ opt(indented(ignoreIndentation(operationConstraint.*),"constraint")) ^^ {
-      case name ~ ps ~ tpe ~ cs1 ~ cs2 => Operation(name.name,tpe,ps,cs1 ++ cs2.map(_.flatten).getOrElse(Nil)).at(name)
+    name ~ parameterList ~ opt(typing) ~ opt(indented(ignoreIndentation(operationConstraint).*,"constraint")) ^^ {
+      case name ~ ps ~ tpe ~ cs => Operation(name.name,tpe.getOrElse(TypeAnnotation.Unit),ps,cs.map(_.flatten).getOrElse(Nil)).at(name)
     }
 
   def ignoreIndentation[T](parser: => Parser[T]) = Parser(input => parser(new IndentationIgnorer(input)))
 
-  def captureConstraint(parser: Parser[Any]) = Parser[UnprocessedConstraint] { input =>
+  def captureConstraint(tpe: ConstraintType, parser: Parser[Any]) = Parser[UnprocessedConstraint] { input =>
     val start = input.pos
     val first = input.offset
     parser(input) match {
       case Success(_,next) =>
-        val c = UnprocessedConstraint(input.source.subSequence(first, next.offset).toString)
+        val c = UnprocessedConstraint(tpe, input.source.subSequence(first, next.offset).toString)
         c.pos = start
         Success(c,next)
       case err: NoSuccess => err
     }
   }
 
+  def tokenToConstraintType(elem: Elem): ConstraintType = elem match {
+    case PRE => ConstraintType.Pre
+    case POST => ConstraintType.Post
+    case BODY => ConstraintType.Body
+    case INV => ConstraintType.Inv
+    case DERIVE => ConstraintType.Derive
+    case INIT => ConstraintType.Init
+  }
+
+
   def operationConstraint: Parser[UnprocessedConstraint] =
-    captureConstraint(((PRE | POST | BODY) ~! opt(name) ~! COLON) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).*)
+    (((PRE | POST | BODY) <~ COLON) ^^ tokenToConstraintType) >> (tpe =>
+      captureConstraint(tpe,(allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).*))
 
   def parameterList: Parser[Seq[Parameter]] =
     named("parameter list", enclosed(LEFT_PARENS, repsep(parameter,COMMA), RIGHT_PARENS))
@@ -208,19 +227,18 @@ object SysMLParsers extends OclParsers {
       case nps~mult => TypeAnnotation(nps, mult.getOrElse(defaultMultiplicity))
     })
 
-
-  def constraintContent(until: Elem) = Parser[UnprocessedConstraint] { input =>
+  def constraintContent(tpe: ConstraintType, until: Elem) = Parser[UnprocessedConstraint] { input =>
     val start = input.pos
     val first = input.offset
     var r = input
     while (!r.atEnd && r.first != until) { r = r.rest }
     val last = r.offset
-    val res = UnprocessedConstraint(input.source.subSequence(first,last).toString)
+    val res = UnprocessedConstraint(tpe, input.source.subSequence(first,last).toString)
     res.pos = start
     Success(res,r)
   }
 
-  def constraint: Parser[UnprocessedConstraint] = LEFT_BRACE ~! (constraintContent(RIGHT_BRACE) <~ RIGHT_BRACE ) ^^ (_._2)
+  def constraint(tpe: ConstraintType): Parser[UnprocessedConstraint] = LEFT_BRACE ~! (constraintContent(tpe, RIGHT_BRACE) <~ RIGHT_BRACE ) ^^ (_._2)
 
   def name: Parser[PositionedName] = positioned(named("identifier", acceptMatch("identifier", {
     case n: OclTokens.SimpleName => PositionedName(n.chars)

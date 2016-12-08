@@ -54,10 +54,22 @@ case class TypeAnnotation(name: Name, multiplicity: Multiplicity) extends Positi
 }
 
 object TypeAnnotation{
+  val Unit = TypeAnnotation(ResolvedName(Types.Unit), Multiplicity(false,false,0,UnlimitedNatural.Finite(0)))
   val Null = TypeAnnotation(ResolvedName(Types.Null), Multiplicity(false,false,0,UnlimitedNatural.Finite(0)))
 }
 
-case class UnprocessedConstraint(content: String) extends BlockMember {
+sealed trait ConstraintType
+object ConstraintType {
+  case object Inv extends ConstraintType
+  case object Post extends ConstraintType
+  case object Pre extends ConstraintType
+  case object Body extends ConstraintType
+  case object Init extends ConstraintType
+  case object Derive extends ConstraintType
+  case object Query extends ConstraintType
+}
+
+case class UnprocessedConstraint(tpe: ConstraintType, content: String) extends BlockMember {
   def name = "<<anonymous>>"
 }
 
@@ -80,7 +92,7 @@ sealed trait BlockMember extends NamedElement
 case class Property(
   name: String,
   typeAnnotation: TypeAnnotation,
-  constraint: Option[UnprocessedConstraint]) extends BlockMember
+  constraints: Seq[UnprocessedConstraint]) extends BlockMember
 
 case class Value(name: String, typeAnnotation: TypeAnnotation) extends BlockMember {
   override def toString = s"<<value>> $name$typeAnnotation"
@@ -90,7 +102,7 @@ case class Reference(
     name: String,
     typeAnnotation: TypeAnnotation,
     oppositeName: Option[String],
-    constraint: Option[UnprocessedConstraint]) extends BlockMember with TypedElement {
+    constraints: Seq[UnprocessedConstraint]) extends BlockMember with TypedElement {
   override def toString = s"<<reference>> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
 }
 case class Operation(
@@ -160,3 +172,8 @@ object Trigger {
 }
 
 sealed trait CallExpr
+
+sealed trait ShortConstraint
+object ShortConstraint {
+  case class Subsets(expr: String) extends ShortConstraint
+}

@@ -9,8 +9,6 @@ block Building
   constraints
     { self.gate = self.org_dom.dest }
     { not (self.gate->includes(self)) }
-  namespace
-    aslkdjasd
 
 block Person
   operations
@@ -20,7 +18,7 @@ block Person
             self.dap_dom->isEmpty()
   references
     aut: Building[*]
-    sit: Building[1] {subsets aut}
+    sit: Building[1] --{subsets aut}
     dap_dom: Door <- dap
   constraints
     { self.aut->forAll(b|self.aut.building->includes(b)) }
@@ -33,17 +31,17 @@ block Door
   operations
     accept(p: Person)
       pre: p.admitted(self)
-      post: p.sit == p
+      post: p.sit = p
     refuse(p: Person)
-      post: p.sit == p@pre.sit
+      post: p.sit = p.sit@pre
     pass_thru()
     off_grn()
       post: not green
     off_red()
       post: not red
   references
-    org: Building[1] <- org_dom {subsets dap.sit}
-    dest: Building[1] {subsets dap.aut}
+    org: Building[1] <- org_dom -- { subsets dap.sit }
+    dest: Building[1] -- { subsets dap.aut }
     dap: Person <- dap_dom
   ports
     in incoming: Person
