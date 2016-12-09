@@ -86,10 +86,10 @@ object SysMLParsers extends OclParsers {
     | simpleName ^^ UnresolvedTargetStateName )
 
   def guard: Parser[UnprocessedConstraint] =
-    LEFT_SQUARE_BRACKET ~> constraintContent(ConstraintType.Query, RIGHT_SQUARE_BRACKET) <~ RIGHT_SQUARE_BRACKET
+    LEFT_SQUARE_BRACKET ~> constraintContent(ConstraintType.Query, None, RIGHT_SQUARE_BRACKET) <~ RIGHT_SQUARE_BRACKET
 
   def action: Parser[UnprocessedConstraint] =
-    SLASH ~> constraintContent(ConstraintType.Query, RIGHT_ARROW)
+    SLASH ~> constraintContent(ConstraintType.Query, None, RIGHT_ARROW)
 
   def trigger: Parser[Trigger] =
   positioned("after" ~> duration ^^ Trigger.Timeout
@@ -122,26 +122,23 @@ object SysMLParsers extends OclParsers {
     "properties" ~> indented(property, "property") ^^ PropertiesCompartment
 
   def property: Parser[Property] =
-    name ~ typing ~ opt(indented(ignoreIndentation(propertyConstraint).*,"constraint")) ^^ {
-      case name ~ tpe ~ cs => Property(name.name,tpe,cs.map(_.flatten).getOrElse(Nil)).at(name)
+    name ~ typing ~ opt(propertyList[AttributeProperty](uniqueProperty,orderedProperty)) ~ opt(indented(ignoreIndentation(propertyConstraint).*,"constraint")) ^^ {
+      case name ~ tpe ~ ps ~ cs => Property(name.name,tpe,ps.toSeq.flatten,cs.map(_.flatten).getOrElse(Nil)).at(name)
     }
 
   def propertyConstraint: Parser[UnprocessedConstraint] =
-    ((DERIVE | INIT) ^^ tokenToConstraintType) >> (tpe =>
-      captureConstraint(tpe,(opt(name) ~! COLON) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).*))
+    (((DERIVE | INIT) ^^ tokenToConstraintType) ~ opt(simpleName) <~ COLON ) >> { case tpe~n =>
+      captureConstraint(tpe,n,(opt(name) ~! COLON) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).*)}
 
   def valuesCompartment: Parser[ValuesCompartment] =
-    "values" ~> indented(value, "value") ^^ ValuesCompartment
-
-  def value: Parser[Value] =
-    name ~ typing ^^ { case name ~ tpe => Value(name.name,tpe).at(name) }
+    "values" ~> indented(property, "value") ^^ ValuesCompartment
 
   def referencesCompartment: Parser[ReferencesCompartment] =
     "references" ~> indented(reference, "reference") ^^ ReferencesCompartment
 
   def reference: Parser[Reference] =
-    name ~ typing ~ opt(opposite) ~ opt(indented(ignoreIndentation(propertyConstraint).*,"constraint")) ^^ {
-      case name ~ tpe ~ opp ~ cs => Reference(name.name,tpe,opp.map(_.name),cs.map(_.flatten).getOrElse(Nil)).at(name)
+    name ~ typing ~ opt(propertyList[ReferenceProperty](orderedProperty,uniqueProperty,subsetsProperty)) ~ opt(opposite) ~ opt(indented(ignoreIndentation(propertyConstraint).*,"constraint")) ^^ {
+      case name ~ tpe ~ ps ~ opp ~ cs => Reference(name.name,tpe,opp.map(_.name),ps.toSeq.flatten,cs.map(_.flatten).getOrElse(Nil)).at(name)
     }
 
   def opposite: Parser[PositionedName] = LEFT_ARROW ~> name
@@ -149,21 +146,19 @@ object SysMLParsers extends OclParsers {
   def operationsCompartment: Parser[OperationsCompartment] =
     "operations" ~> indented(operation, "operation") ^^ OperationsCompartment
 
-  val defaultMultiplicity = Multiplicity(isOrdered = false, isUnique = false, 0, UnlimitedNatural.Finite(1))
-
   def operation: Parser[Operation] =
-    name ~ parameterList ~ opt(typing) ~ opt(indented(ignoreIndentation(operationConstraint).*,"constraint")) ^^ {
-      case name ~ ps ~ tpe ~ cs => Operation(name.name,tpe.getOrElse(TypeAnnotation.Unit),ps,cs.map(_.flatten).getOrElse(Nil)).at(name)
+    name ~ parameterList ~ opt(typing) ~ opt(propertyList[OperationProperty](orderedProperty,uniqueProperty,queryProperty)) ~ opt(indented(ignoreIndentation(operationConstraint).*,"constraint")) ^^ {
+      case name ~ ps ~ tpe ~ propss ~ cs => Operation(name.name,tpe.getOrElse(TypeAnnotation.Unit),ps,propss.toSeq.flatten,cs.map(_.flatten).getOrElse(Nil)).at(name)
     }
 
   def ignoreIndentation[T](parser: => Parser[T]) = Parser(input => parser(new IndentationIgnorer(input)))
 
-  def captureConstraint(tpe: ConstraintType, parser: Parser[Any]) = Parser[UnprocessedConstraint] { input =>
+  def captureConstraint(tpe: ConstraintType, name: Option[specific.sysml.SimpleName], parser: Parser[Any]) = Parser[UnprocessedConstraint] { input =>
     val start = input.pos
     val first = input.offset
     parser(input) match {
       case Success(_,next) =>
-        val c = UnprocessedConstraint(tpe, input.source.subSequence(first + 1, next.offset).toString)
+        val c = UnprocessedConstraint(tpe, name, input.source.subSequence(first + 1, next.offset).toString)
         c.pos = start
         Success(c,next)
       case err: NoSuccess => err
@@ -179,41 +174,30 @@ object SysMLParsers extends OclParsers {
     case INIT => ConstraintType.Init
   }
 
+  def pname: Parser[specific.sysml.SimpleName] =
+    name ^^ (n => specific.sysml.SimpleName(n.name) at n)
 
   def operationConstraint: Parser[UnprocessedConstraint] =
-    (((PRE | POST | BODY) <~ COLON) ^^ tokenToConstraintType) >> (tpe =>
-      captureConstraint(tpe,(allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).*))
+    (((PRE | POST | BODY) ^^ tokenToConstraintType) ~ opt(pname) <~ COLON ) >> { case tpe ~ n =>
+      captureConstraint(tpe, n, (allExcept(AT, PRE, POST, DEDENT) | AT ~ PRE).*)
+    }
 
   def parameterList: Parser[Seq[Parameter]] =
     named("parameter list", enclosed(LEFT_PARENS, repsep(parameter,COMMA), RIGHT_PARENS))
 
   def parameter: Parser[Parameter] =
-    name ~ typing ^^ { case name ~ tpe => Parameter(name.name,tpe).at(name) }
+    name ~ typing ~ opt(propertyList[TypedElementProperty](orderedProperty,uniqueProperty)) ^^ { case name ~ tpe ~ ps => Parameter(name.name,tpe,ps.toSeq.flatten).at(name) }
 
   /** @see UML Spec (15-03-01) 7.5.4 (p 77) */
   def multiplicity: Parser[Multiplicity] =
-    ( enclosed(LEFT_SQUARE_BRACKET, multiplicityRange, RIGHT_SQUARE_BRACKET) ~ opt(
-      enclosed(LEFT_BRACE, orderDesignator ~ opt(COMMA ~> uniquenessDesignator), RIGHT_BRACE) ^^ { case o ~ u => (o,u.getOrElse(false)) }
-    | enclosed(LEFT_BRACE, uniquenessDesignator ~ opt(COMMA ~> orderDesignator), RIGHT_BRACE) ^^ { case u ~ o => (o.getOrElse(false),u) })
-    ) ^^ {
-      case (lb,ub)~Some((o,u)) => Multiplicity(o,u,lb.value,ub)
-      case (lb,ub)~None => Multiplicity(isOrdered = false, isUnique = false, lb.value,ub)
-    }
+    enclosed(LEFT_SQUARE_BRACKET, multiplicityRange, RIGHT_SQUARE_BRACKET)
 
-  def orderDesignator: Parser[Boolean] =
-    ( "ordered" ^^^ true
-    | "unordered" ^^^ false )
-
-  def uniquenessDesignator: Parser[Boolean] =
-    ( "unique" ^^^ true
-    | "nonunique" ^^^ false )
-
-  def multiplicityRange: Parser[(UnlimitedNatural,UnlimitedNatural)] =
-    ( unlimitedNatural ~ ( ELIPSIS ~> unlimitedNatural) ^^ { case l~u => (l,u) }
+  def multiplicityRange: Parser[Multiplicity] =
+    positioned( integer ~ ( ELIPSIS ~> unlimitedNatural) ^^ { case l~u => Multiplicity(l,u) }
     | unlimitedNatural ^^ {
       case UnlimitedNatural.Infinity =>
-        (UnlimitedNatural.Finite(0),UnlimitedNatural.Infinity)
-      case n => (n,n)
+        Multiplicity(0,UnlimitedNatural.Infinity)
+      case UnlimitedNatural.Finite(n) => Multiplicity(n,UnlimitedNatural.Finite(n))
     })
 
   def unlimitedNatural: Parser[UnlimitedNatural] =
@@ -224,21 +208,48 @@ object SysMLParsers extends OclParsers {
 
   def typing: Parser[TypeAnnotation] =
     positioned(named("type signature", COLON ~> typeExp ~ opt(multiplicity)) ^^ {
-      case nps~mult => TypeAnnotation(nps, mult.getOrElse(defaultMultiplicity))
+      case nps~mult => TypeAnnotation(nps, mult)
     })
 
-  def constraintContent(tpe: ConstraintType, until: Elem) = Parser[UnprocessedConstraint] { input =>
+  def constraintContent(tpe: ConstraintType, name: Option[specific.sysml.SimpleName], until: Elem) = Parser[UnprocessedConstraint] { input =>
     val start = input.pos
     val first = input.offset
     var r = input
     while (!r.atEnd && r.first != until) { r = r.rest }
     val last = r.offset
-    val res = UnprocessedConstraint(tpe, input.source.subSequence(first + 1,last).toString)
+    val res = UnprocessedConstraint(tpe, name, input.source.subSequence(first + 1,last).toString)
     res.pos = start
     Success(res,r)
   }
 
-  def constraint(tpe: ConstraintType): Parser[UnprocessedConstraint] = LEFT_BRACE ~! (constraintContent(tpe, RIGHT_BRACE) <~ RIGHT_BRACE ) ^^ (_._2)
+  def constraint(tpe: ConstraintType): Parser[UnprocessedConstraint] =
+    ((INV ~> opt(simpleName)) <~ COLON) >> { case n =>
+      ignoreIndentation(captureConstraint(tpe, n, allExcept(INV, DEDENT, SEPARATOR).*))
+    }
+
+  def propertyList[T <: TypedElementProperty](ps: Parser[T]*): Parser[Seq[T]] = {
+    val combined = ps.foldRight[Parser[T]](failure("expected property")) {
+      case (p,alt) => p | alt
+    }
+    LEFT_BRACE ~> repsep(combined,COMMA) <~ RIGHT_BRACE
+  }
+
+  def typedElementProperties: Parser[Seq[TypedElementProperty]] =
+    ("seq" | "sequence") ^^^ Seq(TypedElementProperty.Unique(false),TypedElementProperty.Ordered(true))
+
+  def uniqueProperty: Parser[TypedElementProperty.Unique] =
+    positioned( "unique" ^^^ TypedElementProperty.Unique(true)
+    | "nonunique" ^^^ TypedElementProperty.Unique(false) )
+
+  def orderedProperty: Parser[TypedElementProperty.Ordered] =
+    positioned( "ordered" ^^^ TypedElementProperty.Ordered(true)
+      | "unordered" ^^^ TypedElementProperty.Ordered(false) )
+
+  def subsetsProperty: Parser[ReferenceProperty.Subsets] =
+    positioned( ("subsets" ~> pathName[NamedElement]) ^^ ReferenceProperty.Subsets )
+
+  def queryProperty: Parser[OperationProperty.Query] =
+    positioned("query" ^^^ OperationProperty.Query(true))
 
   def name: Parser[PositionedName] = positioned(named("identifier", acceptMatch("identifier", {
     case n: OclTokens.SimpleName => PositionedName(n.chars)

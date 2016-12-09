@@ -49,13 +49,13 @@ case class Block(rawName: String, compartments: Seq[BlockCompartment], comments:
   def members = compartments.flatMap(_.content)
 }
 
-case class TypeAnnotation(name: Name, multiplicity: Multiplicity) extends Positional {
+case class TypeAnnotation(name: Name, multiplicity: Option[Multiplicity]) extends Positional {
   override def toString = s": $name$multiplicity"
 }
 
 object TypeAnnotation{
-  val Unit = TypeAnnotation(ResolvedName(Types.Unit), Multiplicity(false,false,0,UnlimitedNatural.Finite(0)))
-  val Null = TypeAnnotation(ResolvedName(Types.Null), Multiplicity(false,false,0,UnlimitedNatural.Finite(0)))
+  val Unit = TypeAnnotation(ResolvedName(Types.Unit), None)
+  val Null = TypeAnnotation(ResolvedName(Types.Null), None)
 }
 
 sealed trait ConstraintType
@@ -69,8 +69,8 @@ object ConstraintType {
   case object Query extends ConstraintType
 }
 
-case class UnprocessedConstraint(tpe: ConstraintType, content: String) extends BlockMember {
-  def name = "<<anonymous>>"
+case class UnprocessedConstraint(tpe: ConstraintType, constraintName: Option[SimpleName], content: String) extends BlockMember {
+  def name = "[[constraint]]"
 }
 
 sealed abstract class BlockCompartment(val compartmentName: String, val content: Seq[BlockMember]) extends Element {
@@ -80,7 +80,7 @@ case class UnsupportedCompartment(name: String) extends BlockCompartment(name, N
   override def toString = s"<<compartment>> $name { unsupported! }"
 }
 case class PropertiesCompartment(properties: Seq[Property]) extends BlockCompartment("properties", properties)
-case class ValuesCompartment(properties: Seq[Value]) extends BlockCompartment("values", properties)
+case class ValuesCompartment(properties: Seq[Property]) extends BlockCompartment("values", properties)
 case class OperationsCompartment(operations: Seq[Operation]) extends BlockCompartment("operations", operations)
 case class ReferencesCompartment(references: Seq[Reference]) extends BlockCompartment("references", references)
 case class PortsCompartment(ports: Seq[Port]) extends BlockCompartment("ports", ports)
@@ -92,28 +92,31 @@ sealed trait BlockMember extends NamedElement
 case class Property(
   name: String,
   typeAnnotation: TypeAnnotation,
+  properties: Seq[AttributeProperty],
   constraints: Seq[UnprocessedConstraint]) extends BlockMember
-
-case class Value(name: String, typeAnnotation: TypeAnnotation) extends BlockMember {
-  override def toString = s"<<value>> $name$typeAnnotation"
-}
 
 case class Reference(
     name: String,
     typeAnnotation: TypeAnnotation,
     oppositeName: Option[String],
+    properties: Seq[ReferenceProperty],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember with TypedElement {
   override def toString = s"<<reference>> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
 }
+
 case class Operation(
     name: String,
     typeAnnotation: TypeAnnotation,
     parameters: Seq[Parameter],
+    properties: Seq[OperationProperty],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember {
   override def toString = s"<<operation>> $name(${parameters.mkString})$typeAnnotation"
 }
 
-case class Parameter(name: String, typeAnnotation: TypeAnnotation) extends Element {
+case class Parameter(
+  name: String,
+  typeAnnotation: TypeAnnotation,
+  properties: Seq[TypedElementProperty]) extends Element {
   override def toString = s"<<param>> $name$typeAnnotation"
 }
 

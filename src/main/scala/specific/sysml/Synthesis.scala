@@ -3,26 +3,24 @@ package specific.sysml
 import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
-import org.eclipse.emf.ecore.{EAnnotation, EModelElement, EObject}
-import org.eclipse.emf.ecore.resource.Resource
+import org.eclipse.emf.ecore.{EModelElement, EObject}
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
-import org.eclipse.ocl.expressions.{OCLExpression, Variable}
-import org.eclipse.ocl.types.OCLStandardLibrary
-import org.eclipse.ocl.uml.internal.OCLStandardLibraryImpl
-import org.eclipse.ocl.{AbstractEnvironment, AbstractEnvironmentFactory, AbstractTypeResolver, Environment, EnvironmentFactory, EvaluationEnvironment, ParserException, TypeResolver}
-import org.eclipse.ocl.uml.{OCL, UMLEnvironment, UMLEnvironmentFactory, UMLOCLStandardLibrary}
-import org.eclipse.ocl.utilities.{OCLFactory, UMLReflection}
+import org.eclipse.ocl.cst.{OCLExpressionCS, OperationCallExpCS}
+import org.eclipse.ocl.expressions.OCLExpression
+import org.eclipse.ocl.lpg.ProblemHandler
+import org.eclipse.ocl.{Environment, ParserException, SemanticException}
+import org.eclipse.ocl.uml.{ExpressionInOCL, OCL, UMLEnvironmentFactory}
 import org.eclipse.papyrus.sysml
 import org.eclipse.papyrus.sysml.blocks.{BlocksFactory, BlocksPackage}
 import org.eclipse.papyrus.sysml.portandflows.{PortandflowsFactory, PortandflowsPackage}
 import org.eclipse.uml2.uml
-import org.eclipse.uml2.uml.{CallOperationAction, Class, Classifier, Constraint, Element, EnumerationLiteral, Operation, Package, Parameter, Profile, Property, PseudostateKind, SendSignalAction, State, UMLFactory}
+import org.eclipse.uml2.uml.{Profile, PseudostateKind, UMLFactory}
 import org.eclipse.papyrus.sysml._
 import org.eclipse.papyrus.sysml.util.SysmlResource
 import org.eclipse.uml2.uml.util.UMLValidator
 import specific.sysml.Types.PrimitiveType
 
-import scala.util.parsing.input.Position
+import scala.util.parsing.input.{NoPosition, Position}
 import scala.collection.JavaConverters._
 
 object Synthesis {
@@ -67,7 +65,7 @@ class Synthesis(name: String) {
 
   val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"),true)
 
-  def addPosAnnotation(elem: EModelElement, pos: Position) = {
+  def addPosAnnotation(elem: EModelElement, pos: Position) = if (pos != NoPosition) {
     val annon = ecoreFactory.createEAnnotation()
     annon.setSource("http://www.dfki.de/specific/SysML")
     annon.getDetails.put("line",pos.line.toString)
@@ -136,40 +134,85 @@ class Synthesis(name: String) {
   }
 
   def structure(owner: blocks.Block, member: BlockMember): Unit = member match {
-    case Operation(name, tpe, params, constraints) =>
+    case Operation(name, tpe, params, props, constraints) =>
       val c = owner.getBase_Class
       val op = umlFactory.createOperation()
       addPosAnnotation(op,member.pos)
       op.setName(name)
       c.getOwnedOperations.add(op)
+      props.collect {
+        case p@OperationProperty.Query(v) =>
+          if (op.eIsSet(op.eClass().getEStructuralFeature("isQuery"))) {
+            if (op.isQuery != v) error(p.pos,"inconsistent operation constraint")
+          } else {
+            op.setIsQuery(v)
+          }
+        case p@TypedElementProperty.Ordered(v) =>
+          if (op.eIsSet(op.eClass().getEStructuralFeature("isOrdered"))) {
+            if (op.isOrdered != v) error(p.pos,"inconsistent operation constraint")
+          } else {
+            op.setIsOrdered(v)
+          }
+        case p@TypedElementProperty.Unique(v) =>
+          if (op.eIsSet(op.eClass().getEStructuralFeature("isUnique"))) {
+            if (op.isUnique != v) error(p.pos,"inconsistent operation constraint")
+          } else {
+            op.setIsUnique(v)
+          }
+      }
       member.uml = Some(op)
       params.foreach(structure(op,_))
-    case Reference(name,tpe,oppositeName,constraint) =>
+    case Reference(name,tpe,oppositeName,props,constraint) =>
       val c = owner.getBase_Class
       val p = umlFactory.createProperty()
       addPosAnnotation(p,member.pos)
-      p.setIsUnique(tpe.multiplicity.isUnique)
-      p.setIsOrdered(tpe.multiplicity.isOrdered)
-      p.setLower(tpe.multiplicity.lower.toInt)
-      p.setUpper(tpe.multiplicity.upper.value.toInt)
+      tpe.multiplicity.foreach { x =>
+        p.setLower(x.lower.toInt)
+        p.setUpper(x.upper.value.toInt)
+        addPosAnnotation(p.getLowerValue,x.pos)
+        addPosAnnotation(p.getUpperValue,x.pos)
+      }
+      props.collect {
+        case pr@TypedElementProperty.Ordered(v) =>
+          if (p.eIsSet(p.eClass().getEStructuralFeature("isOrdered"))) {
+            if (p.isOrdered != v) error(pr.pos,"inconsistent operation constraint")
+          } else {
+            p.setIsOrdered(v)
+          }
+        case pr@TypedElementProperty.Unique(v) =>
+          if (p.eIsSet(p.eClass().getEStructuralFeature("isUnique"))) {
+            if (p.isUnique != v) error(pr.pos,"inconsistent operation constraint")
+          } else {
+            p.setIsUnique(v)
+          }
+      }
       p.setName(name)
       c.getOwnedAttributes.add(p)
       member.uml = Some(p)
-    case Value(name,tpe) =>
+    case Property(name,tpe,props,constraint) =>
       val c = owner.getBase_Class
       val p = umlFactory.createProperty()
       addPosAnnotation(p,member.pos)
-      p.setLower(tpe.multiplicity.lower.toInt)
-      p.setUpper(tpe.multiplicity.upper.value.toInt)
-      p.setName(name)
-      c.getOwnedAttributes.add(p)
-      member.uml = Some(p)
-    case Property(name,tpe,constraint) =>
-      val c = owner.getBase_Class
-      val p = umlFactory.createProperty()
-      addPosAnnotation(p,member.pos)
-      p.setLower(tpe.multiplicity.lower.toInt)
-      p.setUpper(tpe.multiplicity.upper.value.toInt)
+      tpe.multiplicity.foreach { x =>
+        p.setLower(x.lower.toInt)
+        p.setUpper(x.upper.value.toInt)
+        addPosAnnotation(p.getLowerValue,x.pos)
+        addPosAnnotation(p.getUpperValue,x.pos)
+      }
+      props.collect {
+        case pr@TypedElementProperty.Ordered(v) =>
+          if (p.eIsSet(p.eClass().getEStructuralFeature("isOrdered"))) {
+            if (p.isOrdered != v) error(pr.pos,"inconsistent operation constraint")
+          } else {
+            p.setIsOrdered(v)
+          }
+        case pr@TypedElementProperty.Unique(v) =>
+          if (p.eIsSet(p.eClass().getEStructuralFeature("isUnique"))) {
+            if (p.isUnique != v) error(pr.pos,"inconsistent operation constraint")
+          } else {
+            p.setIsUnique(v)
+          }
+      }
       p.setName(name)
       c.getOwnedAttributes.add(p)
       member.uml = Some(p)
@@ -178,8 +221,12 @@ class Synthesis(name: String) {
       val b = umlFactory.createPort()
       val p = portsFactory.createFlowPort()
       addPosAnnotation(b,member.pos)
-      b.setLower(tpe.multiplicity.lower.toInt)
-      b.setUpper(tpe.multiplicity.upper.value.toInt)
+      tpe.multiplicity.foreach { x =>
+        b.setLower(x.lower.toInt)
+        b.setUpper(x.upper.value.toInt)
+        addPosAnnotation(b.getLowerValue,x.pos)
+        addPosAnnotation(b.getUpperValue,x.pos)
+      }
       direction.foreach(direction =>
         p.setDirection(direction match {
           case FlowDirection.In => org.eclipse.papyrus.sysml.portandflows.FlowDirection.IN
@@ -203,16 +250,36 @@ class Synthesis(name: String) {
       stm.getRegions.add(reg)
       states.map(st => structure(reg, st))
       member.uml = Some(stm)
-    case UnprocessedConstraint(_,_) =>
+    case UnprocessedConstraint(_,_,_) =>
       // TODO
     case other =>
       error(other.pos, s"could not synthesize $other")
   }
 
   def structure(op: uml.Operation, param: Parameter): Unit = param match {
-    case Parameter(name, tpe) =>
+    case Parameter(name, tpe, props) =>
       val p = umlFactory.createParameter()
       addPosAnnotation(p,param.pos)
+      tpe.multiplicity.foreach { x =>
+        p.setLower(x.lower.toInt)
+        p.setUpper(x.upper.value.toInt)
+        addPosAnnotation(p.getLowerValue,x.pos)
+        addPosAnnotation(p.getUpperValue,x.pos)
+      }
+      props.collect {
+        case pr@TypedElementProperty.Ordered(v) =>
+          if (p.eIsSet(p.eClass().getEStructuralFeature("isOrdered"))) {
+            if (p.isOrdered != v) error(pr.pos,"inconsistent operation constraint")
+          } else {
+            p.setIsOrdered(v)
+          }
+        case pr@TypedElementProperty.Unique(v) =>
+          if (p.eIsSet(p.eClass().getEStructuralFeature("isUnique"))) {
+            if (p.isUnique != v) error(pr.pos,"inconsistent operation constraint")
+          } else {
+            p.setIsUnique(v)
+          }
+      }
       p.setName(name)
       param.uml = Some(p)
       op.getOwnedParameters.add(p)
@@ -346,14 +413,15 @@ class Synthesis(name: String) {
         case blk: sysml.blocks.Block =>
           validate.validateClass(blk.getBase_Class,chain,context)
       }
-    case Operation(name,tpe,params,constraints) =>
+    case Operation(name,tpe,params,props,constraints) =>
       if (tpe.name != ResolvedName(Types.Unit)) elem.uml.collect {
         case op: uml.Operation =>
           op.setIsQuery(true)
           resolveTypeName(op.getClass_,tpe.name).fold {
             error(tpe.name.pos, s"unknown type $tpe")
-          } { tpe =>
-            op.setType(tpe)
+          } { t =>
+            op.setType(t)
+            addPosAnnotation(op.getReturnResult,tpe.pos)
           }
       }
       params.map(naming)
@@ -361,13 +429,13 @@ class Synthesis(name: String) {
         case op: uml.Operation =>
           validate.validateOperation(op,chain,context)
       }
-    case Parameter(name,tpe) =>
+    case Parameter(name,tpe,props) =>
       elem.uml.collect {
         case op: uml.Parameter =>
           resolveTypeName(op.getOperation.getClass_,tpe.name)
             .foreach(op.setType)
       }
-    case Reference(name,tpe,opposite,constraint) =>
+    case Reference(name,tpe,opposite,props,constraint) =>
       elem.uml.collect {
         case op: uml.Property =>
           resolveTypeName(op.getClass_,tpe.name).foreach{ tpe =>
@@ -382,7 +450,7 @@ class Synthesis(name: String) {
             opp.foreach(op.setOpposite)
           }
       }
-    case Property(name,tpe,constraint) =>
+    case Property(name,tpe,props,constraint) =>
       elem.uml.collect {
         case op: uml.Property =>
           resolveTypeName(op.getClass_,tpe.name).foreach { tpe =>
@@ -390,14 +458,7 @@ class Synthesis(name: String) {
           }
       }
     case Port(name,dir,tpe) =>
-    case Value(name,tpe) =>
-      elem.uml.collect {
-        case op: uml.Property =>
-          resolveTypeName(op.getClass_,tpe.name).foreach { tpe =>
-            op.setType(tpe)
-          }
-      }
-    case UnprocessedConstraint(_,_) =>
+    case UnprocessedConstraint(_,_,_) =>
     case StateMachine(name,states) =>
       states.map(naming)
     case ConcreteState(name,tss,initial) =>
@@ -431,27 +492,6 @@ class Synthesis(name: String) {
   /// CONSTRAINT PARSING  //////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
-  /*def attachConstraint(e: uml.Element, tpe: ConstraintType, c: pivot.ExpressionInOCL) = {
-    c.get
-    c.getBody
-    resource.getContents.add(c)
-    println(c)
-  }*/
-
-  type UMLEnvironmentT = Environment[
-    uml.Package,
-    uml.Classifier,
-    uml.Operation,
-    uml.Property,
-    uml.EnumerationLiteral,
-    uml.Parameter,
-    uml.State,
-    uml.CallOperationAction,
-    uml.SendSignalAction,
-    uml.Constraint,
-    uml.Class,
-    EObject]
-
   lazy val ocl = {
     val environmentFactory: UMLEnvironmentFactory = new UMLEnvironmentFactory(library)
     val env = environmentFactory.createEnvironment()
@@ -467,7 +507,7 @@ class Synthesis(name: String) {
       content.foreach(parseConstraints)
     case b: Block =>
       b.members.foreach {
-        case uc@UnprocessedConstraint(tpe,str) =>
+        case uc@UnprocessedConstraint(tpe,n,str) =>
           b.uml.collect {
             case c: uml.Class =>
               try {
@@ -475,12 +515,16 @@ class Synthesis(name: String) {
                 oclHelper.setContext(c)
                 val constr = oclHelper.createInvariant(str)
                 val xc = umlFactory.createConstraint()
-                addPosAnnotation(xc,uc.pos)
                 val xp = umlFactory.createOpaqueExpression()
+                addPosAnnotation(xp,uc.pos)
                 xp.getBodies.add(str)
                 xp.getLanguages.add("OCL")
                 xc.setSpecification(xp)
                 xc.getConstrainedElements.add(c)
+                n.foreach { n =>
+                  xc.setName(n.name)
+                  addPosAnnotation(xc,n.pos)
+                }
                 c.getOwnedRules.add(xc)
               } catch {
                 case e: ParserException =>
@@ -490,9 +534,9 @@ class Synthesis(name: String) {
           }
         case other => parseConstraints(other)
       }
-    case Operation(name,tpe,params,constraints) =>
+    case Operation(name,tpe,params,props,constraints) =>
       constraints.foreach {
-        case uc@UnprocessedConstraint(tpe,str) =>
+        case uc@UnprocessedConstraint(tpe,n,str) =>
           val name = elem.uml.collect {
             case op: uml.Operation =>
               try {
@@ -506,31 +550,27 @@ class Synthesis(name: String) {
                     oclHelper.createPostcondition(str)
                 }
                 val xc = umlFactory.createConstraint()
-                addPosAnnotation(xc,uc.pos)
                 val xp = umlFactory.createOpaqueExpression()
                 xp.getBodies.add(str)
                 xp.getLanguages.add("OCL")
+                addPosAnnotation(xp,uc.pos)
                 xc.setSpecification(xp)
+                n.foreach { n =>
+                  xc.setName(n.name)
+                  addPosAnnotation(xc,n.pos)
+                }
                 xc.getConstrainedElements.add(op)
                 op.getOwnedRules.add(xc)
               } catch {
                 case e: ParserException =>
-                  e.getCause.printStackTrace()
-                  println(e.getMessage)
-                  println(e.getDiagnostic.toString)
-                //e.printStackTrace()
+                  error(uc.pos, e.getMessage)
               }
           }
       }
-    case Reference(name,tpe,opposite,constraint) =>
+    case Reference(name,tpe,opposite,props,constraint) =>
       constraint.foreach(parseConstraints)
-    case Property(name,tpe,constraint) =>
+    case Property(name,tpe,props,constraint) =>
     case Port(name,dir,tpe) =>
-    case Value(name,tpe) =>
-    case UnprocessedConstraint(tpe,tokens) =>
-      //ocl.parse(new OCLInput(tokens))
-      println(tpe,tokens)
-      println(elem.pos.longString)
     case StateMachine(name,states) =>
       states.foreach(parseConstraints)
     case ConcreteState(name,tss,initial) =>

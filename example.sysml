@@ -3,16 +3,16 @@ bdd [package] acs [ACS]
 
 block Building
   references
-    gate: Building[*] { ordered, unique } <- building
+    gate: Building[*] <- building
     building: Building[1..0] <- gate
     org_dom: Door[*] <- org
   constraints
-    { self.gate = self.org_dom.dest }
-    { not (self.gate->includes(self)) }
+    inv: self.gate = self.org_dom.dest
+    inv: not (self.gate->includes(self))
 
 block Person
   operations
-    admitted(q: Door): Boolean
+    admitted(q: Door[*]): Boolean
       post: q.org = self.sit and
             self.aut->includes(q.dest) and
             self.dap_dom->isEmpty()
@@ -21,8 +21,8 @@ block Person
     sit: Building[1] --{subsets aut}
     dap_dom: Door <- dap
   constraints
-    { self.aut->forAll(b|self.aut.building->includes(b)) }
-    { Person.allInstances()->forAll(p1, p2 | p1.dap_dom->notEmpty() and p1.dap_dom = p2.dap_dom implies p1 = p2) }
+    inv: self.aut->forAll(b|self.aut.building->includes(b))
+    inv: Person.allInstances()->forAll(p1, p2 | p1.dap_dom->notEmpty() and p1.dap_dom = p2.dap_dom implies p1 = p2)
 
 block Door
   values
