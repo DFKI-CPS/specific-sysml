@@ -12,13 +12,13 @@ block Building
 
 block Person
   operations
-    admitted(q: Door[*]): Boolean
+    admitted(q: Door): Boolean { query }
       post: q.org = self.sit and
             self.aut->includes(q.dest) and
             self.dap_dom->isEmpty()
   references
     aut: Building[*]
-    sit: Building[1] --{subsets aut}
+    sit: Building[1] <- blub
     dap_dom: Door <- dap
   constraints
     inv: self.aut->forAll(b|self.aut.building->includes(b))
@@ -40,8 +40,8 @@ block Door
     off_red()
       post: not red
   references
-    org: Building[1] <- org_dom -- { subsets dap.sit }
-    dest: Building[1] -- { subsets dap.aut }
+    org: Building[1] { subsets dap.sit } <- org_dom
+    dest: Building[1] { subsets dap.aut }
     dap: Person <- dap_dom
   ports
     in incoming: Person

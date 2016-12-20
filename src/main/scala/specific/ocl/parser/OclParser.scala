@@ -50,6 +50,8 @@ trait OclParsers extends PackratParsers with ParserHelpers {
     positioned( simpleName[T] ~ (DOUBLE_COLON ~> rep1sep(unreservedSimpleName, DOUBLE_COLON)) ^^ mkList ^^ (_.map(_.name)) ^^ PathName
     | simpleName[T] )
 
+
+
   def literalExp: Parser[Any] =
     ( enumLiteralExp
     | collectionLiteralExp

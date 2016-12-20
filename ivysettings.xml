@@ -2,6 +2,10 @@
     <settings defaultResolver="central"/>
     <resolvers>
         <ibiblio name="central" m2compatible="true"/>
+        <filesystem name="local" local="true">
+            <ivy pattern="${ivy.default.ivy.user.dir}/local/[module]/[revision]/ivy.xml"/>
+            <artifact pattern="${ivy.default.ivy.user.dir}/local/[module]/[revision]/[artifact].[ext]"/>
+        </filesystem>
         <chain name="eclipse">
             <updatesite name="eclipse-neon-updates" url="http://download.eclipse.org/eclipse/updates/4.6/" force="true"/>
             <updatesite name="eclipse-mdt" url="http://download.eclipse.org/modeling/mdt/updates/releases/" force="true"/>

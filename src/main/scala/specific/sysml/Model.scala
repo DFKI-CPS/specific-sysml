@@ -2,18 +2,16 @@ package specific.sysml
 
 import Types.Classifier
 
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
 import scala.concurrent.duration.Duration
-import scala.util.parsing.input.{Position, Positional}
+import scala.util.parsing.input.Positional
 
 
 object indent {
-  def apply(lines: String) = lines.lines.map("  " + _).mkString("\n")
+  def apply(lines: String): String = lines.lines.map("  " + _).mkString("\n")
 }
 
 sealed abstract class DiagramKind(abbrev: String) {
-  override def toString = abbrev
+  override def toString: String = abbrev
 }
 
 case class Comment(content: String) extends Element
@@ -33,20 +31,20 @@ object DiagramKind {
 sealed trait DiagramContent[T <: DiagramKind]
 
 case class Diagram(diagramKind: DiagramKind, modelElementType: String, modelElementName: Seq[String], diagramName: String, members: Seq[NamedElement]) extends Namespace {
-  val name = diagramName
-  override def toString = s"$diagramKind [$modelElementType] $modelElementName [$diagramName]\n" + indent(members.mkString("\n"))
+  val name: String = diagramName
+  override def toString: String = s"$diagramKind [$modelElementType] $modelElementName [$diagramName]\n" + indent(members.mkString("\n"))
 }
 
 case class Package(name: String, blocks: Seq[Block], constraints: Seq[UnprocessedConstraint], subpackages: Seq[Package]) extends Namespace {
   override def toString = s"<<package>> $name\n\n${blocks.mkString("\n\n")}"
-  def members = blocks ++ constraints
+  def members: Seq[NamedElement] = blocks ++ constraints
 }
 
 trait Type
 
 case class Block(rawName: String, compartments: Seq[BlockCompartment], comments: Seq[Comment]) extends Classifier(rawName) with DiagramContent[DiagramKind.BlockDefinitionDiagram.type] {
   override def toString = s"<<block>> $name\n${indent(compartments.mkString("\n"))}"
-  def members = compartments.flatMap(_.content)
+  def members: Seq[BlockMember] = compartments.flatMap(_.content)
 }
 
 case class TypeAnnotation(name: Name, multiplicity: Option[Multiplicity]) extends Positional {
@@ -101,7 +99,7 @@ case class Reference(
     oppositeName: Option[String],
     properties: Seq[ReferenceProperty],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember with TypedElement {
-  override def toString = s"<<reference>> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
+  override def toString: String = s"<<reference>> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
 }
 
 case class Operation(
@@ -110,7 +108,7 @@ case class Operation(
     parameters: Seq[Parameter],
     properties: Seq[OperationProperty],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember {
-  override def toString = s"<<operation>> $name(${parameters.mkString})$typeAnnotation"
+  override def toString: String = s"<<operation>> $name(${parameters.mkString})$typeAnnotation"
 }
 
 case class Parameter(
@@ -133,7 +131,7 @@ case class Port(name: String, direction: Option[FlowDirection], typeAnnotation: 
 
 case class StateMachine(name: String, states: Seq[State]) extends BlockMember with Namespace {
   override def toString = s"<<state machine>> $name\n${indent(states.mkString("\n"))}"
-  def members = states
+  def members: Seq[State] = states
 }
 
 sealed trait State extends NamedElement
@@ -160,16 +158,18 @@ case class Transition(
 sealed trait TransitionTarget extends Element
 
 case class InlineTargetState(state: State) extends TransitionTarget {
-  override def toString = state.toString
+  override def toString: String = state.toString
 }
 
 case class UnresolvedTargetStateName(name: Name) extends TransitionTarget {
-  override def toString = name.toString
+  override def toString: String = name.toString
 }
+
+case class TimeEvent(duration: Duration) extends Positional
 
 sealed trait Trigger extends Element
 object Trigger {
-  case class Timeout(after: Duration) extends Trigger
+  case class Timeout(after: TimeEvent) extends Trigger
   case class Receive(portName: String, boundVariableName: Option[String]) extends Trigger
   //case class Call(operation)
 }

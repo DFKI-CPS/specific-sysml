@@ -12,7 +12,7 @@ case class IndentScanner(input: Reader[SysMLLexer.Token], indentStack: List[SysM
 
   lazy val (firstf: (() => SysMLLexer.Token), restf: (() => Reader[SysMLLexer.Token]), posf: (() => Position)) = if (input.atEnd) indentStack match {
     case i :: is => (() => SysMLTokens.DEDENT,() => IndentScanner(input,is), () => input.pos)
-    case Nil => (() => SysMLLexer.EOF,() => this, () => input.pos)
+    case Nil => (() => SysMLLexer.EOF.asInstanceOf[SysMLLexer.Token],() => this, () => input.pos)
   } else input.first match {
     case SysMLTokens.Indentation.None => indentStack match {
       case Nil => (() => SysMLTokens.SEPARATOR, () => IndentScanner(input.rest,indentStack), () => input.pos)
@@ -40,7 +40,7 @@ case class IndentScanner(input: Reader[SysMLLexer.Token], indentStack: List[SysM
         (() => SysMLTokens.INCONSISTENT_INDENTATION(b, s),() => IndentScanner(input.rest,indentStack),() => input.rest.pos)
       case other => sys.error("invalid indent stack state")
     }
-    case other => (() => other,() => IndentScanner(input.rest,indentStack),() => input.pos)
+    case other: SysMLLexer.Token => (() => other,() => IndentScanner(input.rest,indentStack),() => input.pos)
   }
 
   def first: SysMLLexer.Token = firstf()
@@ -72,6 +72,6 @@ class IndentationIgnorer(input: Reader[SysMLLexer.Token], level: Int = 0) extend
   def first: SysMLLexer.Token = firstf()
   def rest: Reader[SysMLLexer.Token] = restf()
   def pos: Position = posf()
-  override def source = input.source
+  override def source: CharSequence = input.source
   override def offset: Int = input.offset
 }

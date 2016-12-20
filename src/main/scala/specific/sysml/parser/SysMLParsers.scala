@@ -27,10 +27,8 @@ object SysMLParsers extends OclParsers {
 
   def diagramElementParsers(kind: DiagramKind): Parser[NamedElement] = kind match {
     case DiagramKind.BlockDefinitionDiagram => named("block or constraint", block)
+    case other => failure(s"unsupported diagram type $other")
   }
-
-  /*def topLevelConstraint: Parser[UnprocessedConstraint] =
-    captureConstraint(CONTEXT ~! ignoreIndentation((allExcept(CONTEXT,SimpleName("block"),DEDENT,SEPARATOR) | SEPARATOR ~ not(CONTEXT|"block"|DEDENT)).*))*/
 
   def diagram: Parser[Diagram] =
     ( diagramKind ~ enclosed(LEFT_SQUARE_BRACKET,elementType,RIGHT_SQUARE_BRACKET) ~ pathName[NamedElement] ~ enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ) >> {
@@ -64,7 +62,7 @@ object SysMLParsers extends OclParsers {
     INDENT ~ allExcept(INDENT,DEDENT).* ~ opt(skip) ~ allExcept(INDENT,DEDENT).* ~ DEDENT
 
   def behaviorsCompartment: Parser[BehaviorCompartment] =
-    ( "owned" ~ "behaviors"
+    ( "owned".? ~ "behaviors"
     | "classifier" ~ "bahavior") ~> indented(stateMachine, "state machine") ^^ BehaviorCompartment
 
   def constraintsCompartment: Parser[ConstraintsCompartment] =
@@ -95,7 +93,9 @@ object SysMLParsers extends OclParsers {
   positioned("after" ~> duration ^^ Trigger.Timeout
   | "receive" ~> name ~ opt(LEFT_PARENS ~> (name <~ RIGHT_PARENS)) ^^ { case p~v => Trigger.Receive(p.name,v.map(_.name)).at(p) } )
 
-  def duration: Parser[Duration] = integer ~ timeUnit ^^ { case i ~ n => Duration(i.toLong,n).toCoarsest }
+  def duration: Parser[TimeEvent] = positioned{
+    integer ~ timeUnit ^^ { case i ~ n => TimeEvent(Duration(i.toLong,n).toCoarsest) }
+  }
 
   def timeUnit: Parser[TimeUnit] =
   ( ("d" | "day" | "days") ^^^ TimeUnit.DAYS
@@ -153,7 +153,7 @@ object SysMLParsers extends OclParsers {
 
   def ignoreIndentation[T](parser: => Parser[T]) = Parser(input => parser(new IndentationIgnorer(input)))
 
-  def captureConstraint(tpe: ConstraintType, name: Option[specific.sysml.SimpleName], parser: Parser[Any]) = Parser[UnprocessedConstraint] { input =>
+  private def captureConstraint(tpe: ConstraintType, name: Option[specific.sysml.SimpleName], parser: Parser[Any]) = Parser[UnprocessedConstraint] { input =>
     val start = input.pos
     val first = input.offset
     parser(input) match {
@@ -211,7 +211,7 @@ object SysMLParsers extends OclParsers {
       case nps~mult => TypeAnnotation(nps, mult)
     })
 
-  def constraintContent(tpe: ConstraintType, name: Option[specific.sysml.SimpleName], until: Elem) = Parser[UnprocessedConstraint] { input =>
+  private def constraintContent(tpe: ConstraintType, name: Option[specific.sysml.SimpleName], until: Elem) = Parser[UnprocessedConstraint] { input =>
     val start = input.pos
     val first = input.offset
     var r = input
@@ -223,7 +223,7 @@ object SysMLParsers extends OclParsers {
   }
 
   def constraint(tpe: ConstraintType): Parser[UnprocessedConstraint] =
-    ((INV ~> opt(simpleName)) <~ COLON) >> { case n =>
+    ((INV ~> opt(simpleName)) <~ COLON) >> { n =>
       ignoreIndentation(captureConstraint(tpe, n, allExcept(INV, DEDENT, SEPARATOR).*))
     }
 
@@ -231,7 +231,7 @@ object SysMLParsers extends OclParsers {
     val combined = ps.foldRight[Parser[T]](failure("expected property")) {
       case (p,alt) => p | alt
     }
-    LEFT_BRACE ~> repsep(combined,COMMA) <~ RIGHT_BRACE
+    LEFT_BRACE ~! repsep(combined,COMMA) <~ RIGHT_BRACE ^^ (_._2)
   }
 
   def typedElementProperties: Parser[Seq[TypedElementProperty]] =
@@ -245,8 +245,12 @@ object SysMLParsers extends OclParsers {
     positioned( "ordered" ^^^ TypedElementProperty.Ordered(true)
       | "unordered" ^^^ TypedElementProperty.Ordered(false) )
 
+  def qualifiedName[T <: NamedElement]: Parser[Name] =
+    positioned( simpleName[T] ~ (DOT ~> rep1sep(unreservedSimpleName, DOT)) ^^ mkList ^^ (_.map(_.name)) ^^ PathName
+      | simpleName[T] )
+
   def subsetsProperty: Parser[ReferenceProperty.Subsets] =
-    positioned( ("subsets" ~> pathName[NamedElement]) ^^ ReferenceProperty.Subsets )
+    positioned( ("subsets" ~! qualifiedName[NamedElement]) ^^ { case _~s => ReferenceProperty.Subsets(s) } )
 
   def queryProperty: Parser[OperationProperty.Query] =
     positioned("query" ^^^ OperationProperty.Query(true))

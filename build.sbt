@@ -1,12 +1,8 @@
-organization := "de.dfki.specific"
-name := "SysML"
-version := "1.0"
-scalaVersion := "2.12.0"
-scalaVersion in ThisBuild := "2.12.0"
-
-resolvers += Resolver.url("eclipse-updates",url("http://download.eclipse.org/eclipse/updates/4.6/R-4.6.1-201609071200/plugins/"))(
-                                                                                                                                   Patterns("[organisation].[module]_[revision].[ext]")
-                                                                                                                                 )
+organization := "net.flatmap"
+name := "sysml"
+version := "0.1"
+scalaVersion := "2.12.1"
+scalaVersion in ThisBuild := "2.12.1"
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.4",
@@ -17,4 +13,5 @@ libraryDependencies ++= Seq(
 ).map(_.force())
 
 externalIvySettings()
+
 ivyXML := scala.xml.XML.load((baseDirectory.value / "exclude.xml").asURL)

@@ -3,13 +3,10 @@ package specific.sysml
 import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
-import org.eclipse.emf.ecore.{EModelElement, EObject}
+import org.eclipse.emf.ecore.{EModelElement}
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
-import org.eclipse.ocl.cst.{OCLExpressionCS, OperationCallExpCS}
-import org.eclipse.ocl.expressions.OCLExpression
-import org.eclipse.ocl.lpg.ProblemHandler
-import org.eclipse.ocl.{Environment, ParserException, SemanticException}
-import org.eclipse.ocl.uml.{ExpressionInOCL, OCL, UMLEnvironmentFactory}
+import org.eclipse.ocl.{Environment, ParserException}
+import org.eclipse.ocl.uml.{OCL, UMLEnvironmentFactory}
 import org.eclipse.papyrus.sysml
 import org.eclipse.papyrus.sysml.blocks.{BlocksFactory, BlocksPackage}
 import org.eclipse.papyrus.sysml.portandflows.{PortandflowsFactory, PortandflowsPackage}
@@ -345,12 +342,14 @@ class Synthesis(name: String) {
       //ts.getTriggers.add(t)
     case trig@Trigger.Timeout(duration) =>
       val t = umlFactory.createTrigger()
+      addPosAnnotation(t,trig.pos)
       val e = umlFactory.createTimeEvent()
       e.setIsRelative(true)
       val time = umlFactory.createTimeExpression()
       val o = umlFactory.createOpaqueExpression()
       o.getLanguages.add("SCALA")
-      o.getBodies.add(duration.toString)
+      o.getBodies.add(duration.duration.toString)
+      addPosAnnotation(o,duration.pos)
       time.setExpr(o)
       e.setWhen(time)
       model.getPackagedElements.add(e)
@@ -416,7 +415,6 @@ class Synthesis(name: String) {
     case Operation(name,tpe,params,props,constraints) =>
       if (tpe.name != ResolvedName(Types.Unit)) elem.uml.collect {
         case op: uml.Operation =>
-          op.setIsQuery(true)
           resolveTypeName(op.getClass_,tpe.name).fold {
             error(tpe.name.pos, s"unknown type $tpe")
           } { t =>
@@ -548,6 +546,8 @@ class Synthesis(name: String) {
                     oclHelper.createBodyCondition(str)
                   case ConstraintType.Post =>
                     oclHelper.createPostcondition(str)
+                  case other =>
+                    error(uc.pos, s"invalid constraint type $other for operation")
                 }
                 val xc = umlFactory.createConstraint()
                 val xp = umlFactory.createOpaqueExpression()
