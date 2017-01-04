@@ -17,9 +17,11 @@ import org.eclipse.uml2.uml
 import org.eclipse.uml2.uml.util.UMLValidator
 import org.eclipse.uml2.uml.{Profile, PseudostateKind, UMLFactory}
 import Types.PrimitiveType
+import de.dfki.cps.specific.sysml.parser.{ParseError, Severity}
 import specific.sysml._
 
 import scala.collection.JavaConverters._
+import scala.collection.mutable
 import scala.util.parsing.input.{NoPosition, Position}
 
 object Synthesis {
@@ -77,7 +79,7 @@ class Synthesis(name: String) {
   private val ecoreFactory = org.eclipse.emf.ecore.EcoreFactory.eINSTANCE
   private val blocksFactory = BlocksFactory.eINSTANCE
   private val portsFactory = PortandflowsFactory.eINSTANCE
-  private val model = umlFactory.createModel()
+  val model = umlFactory.createModel()
 
   model.setName(name)
   resource.getContents.add(model)
@@ -417,7 +419,7 @@ class Synthesis(name: String) {
     case Operation(name,tpe,params,props,constraints) =>
       if (tpe.name != ResolvedName(Types.Unit)) elem.uml.collect {
         case op: uml.Operation =>
-          resolveTypeName(op.getClass_,tpe.name).fold {
+          resolveTypeName(op.getClass_,tpe.name).fold[Unit] {
             error(tpe.name.pos, s"unknown type $tpe")
           } { t =>
             op.setType(t)
@@ -584,12 +586,16 @@ class Synthesis(name: String) {
       error(elem.pos, s"could not synthesize $other")
   }
 
-  private def warn(pos: Position, message: String) =
-    println(s"WARN: $pos: $message\n${pos.longString}")
-  private def error(pos: Position, message: String) =
-    println(s"ERROR: $pos: $message\n${pos.longString}")
-  private def abort(pos: Position, message: String) =
-    println(s"ERROR: $pos: $message\n${pos.longString}")
+  val messages: mutable.Buffer[ParseError] = mutable.Buffer.empty
+
+  var file = "<unknown>"
+
+  private def warn(pos: Position, message: String): Unit =
+    messages += ParseError(file,pos,Severity.Warn,message)
+  private def error(pos: Position, message: String): Unit =
+    messages += ParseError(file,pos,Severity.Error,message)
+  private def abort(pos: Position, message: String): Unit =
+    messages += ParseError(file,pos,Severity.Error,message)
 
   def save() = {
     validate.validateModel(model,chain,new util.HashMap)

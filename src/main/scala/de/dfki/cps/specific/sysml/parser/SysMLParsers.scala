@@ -14,7 +14,7 @@ import scala.util.parsing.input.Positional
 object SysMLParsers extends OclParsers {
   override type Elem = OclLexer.Token
 
-  case class PositionedName(name: String) extends Positional
+  case class PositionedName(name: String) extends FilePositional
 
   import de.dfki.cps.specific.ocl.parser.OclTokens._
   import SysMLTokens._

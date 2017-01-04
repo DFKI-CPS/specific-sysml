@@ -9,6 +9,7 @@ import de.dfki.cps.specific.sysml._
 import de.dfki.cps.specific.util.ParserHelpers
 
 import scala.util.parsing.combinator.PackratParsers
+import scala.util.parsing.input.Positional
 
 object OclParsers extends OclParsers
 
