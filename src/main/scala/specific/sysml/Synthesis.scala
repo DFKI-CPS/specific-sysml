@@ -3,10 +3,10 @@ package specific.sysml
 import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
-import org.eclipse.emf.ecore.{EModelElement}
+import org.eclipse.emf.ecore.EModelElement
 import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
-import org.eclipse.ocl.{Environment, ParserException}
-import org.eclipse.ocl.uml.{OCL, UMLEnvironmentFactory}
+import org.eclipse.ocl.pivot
+import org.eclipse.ocl.pivot.utilities.{OCL, ParserException}
 import org.eclipse.papyrus.sysml
 import org.eclipse.papyrus.sysml.blocks.{BlocksFactory, BlocksPackage}
 import org.eclipse.papyrus.sysml.portandflows.{PortandflowsFactory, PortandflowsPackage}
@@ -23,9 +23,9 @@ import scala.collection.JavaConverters._
 object Synthesis {
   var initialized = false
   def init() = if (!initialized) {
-    //pivot.uml.UMLStandaloneSetup.init()
-    //org.eclipse.ocl.xtext.essentialocl.EssentialOCLStandaloneSetup.doSetup()
-    //org.eclipse.ocl.pivot.model.OCLstdlib.install()
+    pivot.uml.UMLStandaloneSetup.init()
+    org.eclipse.ocl.xtext.essentialocl.EssentialOCLStandaloneSetup.doSetup()
+    org.eclipse.ocl.pivot.model.OCLstdlib.install()
     initialized = true
   }
 }
@@ -491,14 +491,9 @@ class Synthesis(name: String) {
   //////////////////////////////////////////////////////////////////////////////
 
   lazy val ocl = {
-    val environmentFactory: UMLEnvironmentFactory = new UMLEnvironmentFactory(library)
-    val env = environmentFactory.createEnvironment()
-    Environment.Registry.INSTANCE.registerEnvironment(env)
-    val ocl = OCL.newInstance(environmentFactory)
+    val ocl = OCL.newInstance(library)
     ocl
   }
-
-  lazy val oclHelper = ocl.createOCLHelper()
 
   def parseConstraints(elem: Element): Unit = elem match {
     case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
@@ -510,8 +505,8 @@ class Synthesis(name: String) {
             case c: uml.Class =>
               try {
                 assert(tpe == ConstraintType.Inv)
-                oclHelper.setContext(c)
-                val constr = oclHelper.createInvariant(str)
+                val cls = ocl.getMetamodelManager.getASOf(classOf[pivot.Class],c)
+                val constr = ocl.createInvariant(cls,str)
                 val xc = umlFactory.createConstraint()
                 val xp = umlFactory.createOpaqueExpression()
                 addPosAnnotation(xp,uc.pos)
@@ -538,7 +533,8 @@ class Synthesis(name: String) {
           val name = elem.uml.collect {
             case op: uml.Operation =>
               try {
-                oclHelper.setOperationContext(op.getClass_,op)
+                val opn = ocl.getMetamodelManager.getASOf(classOf[pivot.Operation],op)
+                val oclHelper = ocl.createOCLHelper(opn)
                 val constr = tpe match {
                   case ConstraintType.Pre =>
                     oclHelper.createPrecondition(str)
