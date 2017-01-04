@@ -1,5 +1,5 @@
-organization := "net.flatmap"
-name := "sysml"
+organization := "de.dfki.cps"
+name := "specific-sysml"
 version := "0.1"
 scalaVersion := "2.12.1"
 scalaVersion in ThisBuild := "2.12.1"
