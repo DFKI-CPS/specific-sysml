@@ -1,6 +1,7 @@
-from: example.sysml
-to: example.sysml
+from: ./example.sysml
+to:   ./example.sysml
 --------------------------------------------------------------------------------
 acs
   Building
-    gate: gate
+    gate -> gate
+  Door -> Door

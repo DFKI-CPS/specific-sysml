@@ -27,10 +27,12 @@ import scala.util.parsing.input.{NoPosition, Position}
 object Synthesis {
   var initialized = false
   def init() = if (!initialized) {
+    println("initializing OCL components...")
     pivot.uml.UMLStandaloneSetup.init()
     org.eclipse.ocl.xtext.essentialocl.EssentialOCLStandaloneSetup.doSetup()
     org.eclipse.ocl.pivot.model.OCLstdlib.install()
     initialized = true
+    println("[success] initialized OCL components")
   }
 }
 
@@ -49,6 +51,8 @@ class Synthesis(name: String) {
     * StateMachines
     * UseCases
     */
+  println("initalizing synthesizer")
+
   private val appliedProfiles = Set("SysML","Blocks","PortAndFlows")
 
   private val sysml_profile_uri = URI.createURI(getClass.getClassLoader.getResource("model/SysML.profile.uml").toString)
@@ -105,6 +109,8 @@ class Synthesis(name: String) {
   val context = new util.HashMap[AnyRef,AnyRef]()
 
   val validate = new UMLValidator
+
+  println("[success] initalized synthesizer")
 
   //////////////////////////////////////////////////////////////////////////////
   /// STRUCTURE  ///////////////////////////////////////////////////////////////

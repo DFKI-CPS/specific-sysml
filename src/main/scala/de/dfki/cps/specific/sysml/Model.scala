@@ -1,9 +1,15 @@
 package de.dfki.cps.specific.sysml
 
-import de.dfki.cps.specific.sysml.Types.Classifier
+import java.net.URI
 
+import de.dfki.cps.specific.sysml.Types.Classifier
+import org.eclipse.uml2.uml.Model
+import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
+
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
-import scala.util.parsing.input.Positional
+import scala.io.Source
+import scala.util.parsing.input.{Positional, Reader}
 
 
 
@@ -177,4 +183,29 @@ sealed trait CallExpr
 sealed trait ShortConstraint
 object ShortConstraint {
   case class Subsets(expr: String) extends ShortConstraint
+}
+
+object Model {
+  private val cache = mutable.Map.empty[URI,Model]
+
+  def load(uri: URI): Model = {
+    require(uri.isAbsolute, "URI is not absolute")
+    cache.getOrElseUpdate(uri, {
+      val source = Source.fromURI(uri)
+      var tokens: Reader[SysMLLexer.Token] = new IndentScanner(new SysMLLexer.Scanner(source.mkString))
+      SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
+        case SysMLParsers.Success(b: Diagram, _) =>
+          val synth = new Synthesis(uri.toString)
+          println(s"synthesizing $uri")
+          synth.structure(b)
+          synth.naming(b)
+          synth.parseConstraints(b)
+          println(s"[success] synthesized $uri")
+          synth.model
+        case SysMLParsers.NoSuccess(msg, i) =>
+          println(s"$msg [${i.pos}]:\n${i.pos.longString}")
+          sys.error(msg)
+      }
+    })
+  }
 }
