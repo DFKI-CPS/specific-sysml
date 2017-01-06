@@ -3,5 +3,5 @@ to:   ./example.sysml
 --------------------------------------------------------------------------------
 acs
   Building
-    gate -> gate
+    gate -> org_dom.dest
   Door -> Door

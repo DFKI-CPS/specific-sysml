@@ -25,12 +25,12 @@ object SysMLLexer extends OclLexer {
   def sysmlComment = ('/' ~ '*' ~ '*') ~!> blockComment("", 0) ^^ (_.trim) ^^ SysmlComment
 
   def noTabs =
-    success() ~! (
+    success(()) ~! (
       not('\t')
     | positioned(failure("indentation starting with spaces must not contain tabs")) )
 
   def noSpaces =
-    success() ~! (
+    success(()) ~! (
       not(' ')
     | positioned(failure("indentation starting with tabs must not contain spaces")) )
 

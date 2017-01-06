@@ -89,7 +89,7 @@ class Synthesis(name: String) {
   resource.getContents.add(model)
 
   // PROFILE APPLICATIONS
-  profs.getAllContents.forEachRemaining {
+  profs.getAllContents.asScala.foreach {
     case x: Profile if appliedProfiles contains(x.getName) =>
       val pappl = model.createProfileApplication()
       pappl.createEAnnotation("http://www.eclipse.org/uml2/2.0.0/UML").getReferences.add(x.getDefinition)
@@ -369,7 +369,7 @@ class Synthesis(name: String) {
   }
 
   private def getOrCreatePackage(namespace: uml.Package, name: String): uml.Package = {
-    val nested = collectionAsScalaIterable(namespace.getNestedPackages)
+    val nested = namespace.getNestedPackages.asScala
     nested.find(_.getName == name).getOrElse {
       val pkg = umlFactory.createPackage()
       pkg.setName(name)
@@ -386,7 +386,7 @@ class Synthesis(name: String) {
     def resolveTypeNameInternal(scope: uml.Namespace, name: Name): Option[uml.Type] = name match {
       case ResolvedName(Types.Unit | Types.Null) => Some(null)
       case ResolvedName(t: PrimitiveType[_]) =>
-        val primTypes = collectionAsScalaIterable(primitives.getContents.get(0).eContents())
+        val primTypes = primitives.getContents.get(0).eContents().asScala
         primTypes.collectFirst {
           case tpe: uml.Type if tpe.getName == t.name => tpe
         }
@@ -396,7 +396,7 @@ class Synthesis(name: String) {
         if (name.isEmpty) None
         else if (name.length == 1) resolveTypeNameInternal(scope,SimpleName(name.head)) else None
       case SimpleName(n) =>
-        val members = collectionAsScalaIterable(scope.getMembers)
+        val members = scope.getMembers.asScala
         val res = members.find(_.getName == n) collect {
           case tp: uml.Type => tp
         }
@@ -450,7 +450,7 @@ class Synthesis(name: String) {
             op.setType(tpe)
             val opp = (opposite, tpe) match {
               case (Some(o),tpe: uml.Classifier) =>
-                collectionAsScalaIterable(tpe.getAttributes).find { p =>
+                tpe.getAttributes.asScala.find { p =>
                   p.getName == o
                 }
               case _ => None
@@ -477,7 +477,7 @@ class Synthesis(name: String) {
       trigger.foreach(naming)
       elem.uml.collect {
         case t: uml.Transition =>
-          val vertices = collectionAsScalaIterable(t.getContainer.getSubvertices)
+          val vertices = t.getContainer.getSubvertices.asScala
           val target = if (name.parts.length == 1)
             vertices.find(_.getName == name.parts.head)
           else
@@ -605,6 +605,6 @@ class Synthesis(name: String) {
 
   def save() = {
     validate.validateModel(model,chain,new util.HashMap)
-    resource.save(mapAsJavaMap(Map.empty[Any,Any]))
+    resource.save(Map.empty[Any,Any].asJava)
   }
 }
