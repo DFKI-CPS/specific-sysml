@@ -3,6 +3,7 @@ package de.dfki.cps.specific.sysml
 import java.net.URI
 
 import de.dfki.cps.specific.sysml.Types.Classifier
+import org.eclipse.emf.ecore.resource.ResourceSet
 import org.eclipse.uml2.uml.Model
 import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
 
@@ -188,7 +189,7 @@ object ShortConstraint {
 object Model {
   private val cache = mutable.Map.empty[URI,Model]
 
-  def load(uri: URI): Model = {
+  def load(uri: URI)(implicit rs: ResourceSet): Model = {
     require(uri.isAbsolute, "URI is not absolute")
     cache.getOrElseUpdate(uri, {
       val source = Source.fromURI(uri)

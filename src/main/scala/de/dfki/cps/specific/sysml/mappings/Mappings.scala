@@ -3,6 +3,9 @@ package de.dfki.cps.specific.sysml.mappings
 import java.io.File
 import java.net.URI
 
+import de.dfki.cps.specific.sysml.Synthesis
+import org.eclipse.emf.ecore.resource.ResourceSet
+import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
 import org.eclipse.uml2.uml.{Model, NamedElement, Namespace, Transition}
 import specific.sysml.parser.{IndentScanner, SysMLLexer}
 
@@ -25,7 +28,7 @@ case class BehaviorMapping(
   outs: Set[Transition]) extends Mapping[Transition]
 
 object Mappings {
-  def load(uri: URI): Mappings = {
+  def load(uri: URI)(implicit resourceSet: ResourceSet): Mappings = {
     val absolute = new File(".").toURI.resolve(uri)
     val source = Source.fromURI(absolute)
 
@@ -66,6 +69,8 @@ object Mappings {
 }
 
 object MappingsTest extends App {
+  implicit val rs = new ResourceSetImpl
+  Synthesis.prepareLibrary(rs)
   val ms = Mappings.load(URI.create("./example.mapping"))
   println(ms)
 }

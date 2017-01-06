@@ -4,7 +4,6 @@ import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
 import org.eclipse.emf.ecore.EModelElement
-import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
 import org.eclipse.ocl.pivot
 import org.eclipse.ocl.pivot.ExpressionInOCL
 import org.eclipse.ocl.pivot.utilities.{OCL, ParserException}
@@ -18,7 +17,7 @@ import org.eclipse.uml2.uml.util.UMLValidator
 import org.eclipse.uml2.uml.{Profile, PseudostateKind, UMLFactory}
 import Types.PrimitiveType
 import de.dfki.cps.specific.sysml.parser.{ParseError, Severity}
-import specific.sysml._
+import org.eclipse.emf.ecore.resource.ResourceSet
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -34,9 +33,20 @@ object Synthesis {
     initialized = true
     println("[success] initialized OCL components")
   }
+
+  def prepareLibrary(library: ResourceSet): Unit = {
+    val sysml_profile_uri = URI.createURI(getClass.getClassLoader.getResource("model/SysML.profile.uml").toString)
+    library.getURIConverter.getURIMap.put(URI.createURI(SysmlResource.SYSML_PROFILE_URI), sysml_profile_uri)
+    org.eclipse.uml2.uml.resources.util.UMLResourcesUtil.init(library)
+    uml.resources.util.UMLResourcesUtil.initPackageRegistry(library.getPackageRegistry)
+    library.getPackageRegistry put (uml.UMLPackage.eNS_URI, uml.UMLPackage.eINSTANCE)
+    library.getPackageRegistry put (sysml.SysmlPackage.eNS_URI, sysml.SysmlPackage.eINSTANCE)
+    library.getPackageRegistry put (BlocksPackage.eNS_URI, BlocksPackage.eINSTANCE)
+    library.getPackageRegistry put (PortandflowsPackage.eNS_URI, PortandflowsPackage.eINSTANCE)
+  }
 }
 
-class Synthesis(name: String) {
+class Synthesis(name: String)(implicit library: ResourceSet) {
   Synthesis.init()
   /*
     * SysML
@@ -55,17 +65,6 @@ class Synthesis(name: String) {
 
   private val appliedProfiles = Set("SysML","Blocks","PortAndFlows")
 
-  private val sysml_profile_uri = URI.createURI(getClass.getClassLoader.getResource("model/SysML.profile.uml").toString)
-  private val library = new ResourceSetImpl
-
-  library.getURIConverter.getURIMap.put(URI.createURI(SysmlResource.SYSML_PROFILE_URI), sysml_profile_uri)
-  org.eclipse.uml2.uml.resources.util.UMLResourcesUtil.init(library)
-  uml.resources.util.UMLResourcesUtil.initPackageRegistry(library.getPackageRegistry)
-  library.getPackageRegistry put (uml.UMLPackage.eNS_URI, uml.UMLPackage.eINSTANCE)
-  library.getPackageRegistry put (sysml.SysmlPackage.eNS_URI, sysml.SysmlPackage.eINSTANCE)
-  library.getPackageRegistry put (BlocksPackage.eNS_URI, BlocksPackage.eINSTANCE)
-  library.getPackageRegistry put (PortandflowsPackage.eNS_URI, PortandflowsPackage.eINSTANCE)
-
   private val primitives = library.getResource(URI.createURI(uml.resource.UMLResource.UML_PRIMITIVE_TYPES_LIBRARY_URI),true)
 
   val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"),true)
@@ -78,11 +77,12 @@ class Synthesis(name: String) {
     elem.getEAnnotations.add(annon)
   }
 
-  private val resource = library.createResource(URI.createFileURI(s"./$name.uml"))
   private val umlFactory = UMLFactory.eINSTANCE
   private val ecoreFactory = org.eclipse.emf.ecore.EcoreFactory.eINSTANCE
   private val blocksFactory = BlocksFactory.eINSTANCE
   private val portsFactory = PortandflowsFactory.eINSTANCE
+
+  val resource = library.createResource(URI.createFileURI(s"./$name.uml"))
   val model = umlFactory.createModel()
 
   model.setName(name)

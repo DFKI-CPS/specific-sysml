@@ -1,5 +1,6 @@
 package de.dfki.cps.specific.sysml
 
+import org.eclipse.emf.ecore.resource.impl.ResourceSetImpl
 import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
 
 import scala.io.Source
@@ -9,8 +10,10 @@ import scala.util.parsing.input.Reader
   * Created by martin on 19.04.16.
   */
 object Test extends App {
-  val source = Source.fromFile("example.sysml")
+  implicit val rs = new ResourceSetImpl
+  Synthesis.prepareLibrary(rs)
 
+  val source = Source.fromFile("example.sysml")
   var tokens: Reader[SysMLLexer.Token] = new IndentScanner(new SysMLLexer.Scanner(source.mkString))
 
   SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {

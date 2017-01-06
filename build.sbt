@@ -1,6 +1,6 @@
 organization := "de.dfki.cps"
 name := "specific-sysml"
-version := "0.1.0"
+version := "0.1.2"
 scalaVersion := "2.11.8"
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 bintrayOrganization := Some("dfki-cps")
@@ -14,6 +14,5 @@ resolvers += Resolver.bintrayRepo("dfki-cps", "maven")
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.5",
   "org.scalatest" %% "scalatest" % "3.0.0+" % "test",
-  "de.dfki.cps" % "specific-dependencies" % "4.6.1",
-  "log4j" % "log4j" % "1.2.17"
+  "de.dfki.cps" % "specific-dependencies" % "4.6.2"
 )
