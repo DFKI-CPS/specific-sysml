@@ -1,59 +1,62 @@
 bdd [package] acs [ACS]
------------------------------------
+-----------------------------------------------------------
 
 block Building
   references
     gate: Building[*] <- building
-    building: Building[1..0] <- gate
+    building: Building[*] <- gate
     org_dom: Door[*] <- org
-  constraints
-    inv: self.gate = self.org_dom.dest
-    inv: not (self.gate->includes(self))
 
 block Person
   operations
-    admitted(q: Door): Boolean { query }
-      post: q.org = self.sit and
-            self.aut->includes(q.dest) and
-            self.dap_dom->isEmpty()
+    admitted(q: Door): Boolean
+      post P17: q.org = self.sit and
+                self.aut->includes(q.dest) and
+                self.dap_dom->isEmpty()
   references
     aut: Building[*]
-    sit: Building[1] <- blub
-    dap_dom: Door <- dap
+    sit: Building[1] { subsets aut }
+    dap_dom: Door[0..1] <- dap
   constraints
-    inv: self.aut->forAll(b|self.aut.building->includes(b))
-    inv: Person.allInstances()->forAll(p1, p2 | p1.dap_dom->notEmpty() and p1.dap_dom = p2.dap_dom implies p1 = p2)
+    inv: aut->forAll(b|self.aut.building->includes(b))
+    inv: aut->includes(dap_dom.dest)
+    inv: sit->includes(dap_dom.org)
+    inv: Person.allInstances()->
+             forAll(p1, p2 |p1.dap_dom->notEmpty()
+                        and p1.dap_dom = p2.dap_dom
+                    implies p1 = p2)
+
 
 block Door
   values
     green: Boolean
+      derive: dap->notEmpty()
     red: Boolean
   operations
     accept(p: Person)
+      pre: not (green or red)
       pre: p.admitted(self)
-      post: p.sit = p
-    refuse(p: Person)
-      post: p.sit = p.sit@pre
+      post: dap = p and p.dap_dom = self
     pass_thru()
+      pre: green
+      post: dap@pre.sit = dest
+        and dap@pre.dap_dom->isEmpty
+        and dap->isEmpty()
     off_grn()
-      post: not green
-    off_red()
-      post: not red
+      pre: green
+      post: dap@pre.dap_dom->isEmpty()
+        and dap->isEmpty()
   references
-    org: Building[1] { subsets dap.sit } <- org_dom
-    dest: Building[1] { subsets dap.aut }
-    dap: Person <- dap_dom
+    org:  Building[1] <- org_dom
+    dest: Building[1]
+    dap:  Person[0..1] <- dap_dom
   ports
-    in incoming: Person
-    in passing: Boolean
+    incoming: Person
+    passing: Person
   owned behaviors
-    state machine DoorBehavior
+    state machine EnterBehavior
       initial state Waiting
-        receive incoming(p) -> choose
-          [ p.admitted(this)     ] / accept(p) -> Accepting
-          [ not p.admitted(this) ] / refuse(p) -> Refusing
+        receive incoming(p) / accept(p) -> Accepting
       state Accepting
-        after 30000 ms           -> Waiting
-        receive passing / pass_thru() -> Waiting
-      state Refusing
-        after 30 seconds -> Waiting
+        after 30 seconds / off_grn() -> Waiting
+        receive passing(p) / pass_thru() -> Waiting

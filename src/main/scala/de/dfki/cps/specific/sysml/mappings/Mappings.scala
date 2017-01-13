@@ -56,8 +56,8 @@ object Mappings {
       case MappingsParsers.Success(b: AST.File,_) =>
         val absFrom = absolute.resolve(b.header.from.url)
         val absTo = absolute.resolve(b.header.to.url)
-        val from = de.dfki.cps.specific.sysml.Model.load(absFrom)
-        val to = de.dfki.cps.specific.sysml.Model.load(absTo)
+        val from = de.dfki.cps.specific.sysml.Model.load(absFrom).getContents.get(0).asInstanceOf[Model]
+        val to = de.dfki.cps.specific.sysml.Model.load(absTo).getContents.get(0).asInstanceOf[Model]
         val ms = b.mappings.flatMap(mappings(from)(_))
         Mappings(from,to,ms)
       case MappingsParsers.NoSuccess(msg,i) =>

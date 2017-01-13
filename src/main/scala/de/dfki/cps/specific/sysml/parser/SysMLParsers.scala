@@ -129,7 +129,7 @@ object SysMLParsers extends OclParsers {
 
   def propertyConstraint: Parser[UnprocessedConstraint] =
     (((DERIVE | INIT) ^^ tokenToConstraintType) ~ opt(simpleName) <~ COLON ) >> { case tpe~n =>
-      captureConstraint(tpe,n,(opt(name) ~! COLON) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).*)}
+      captureConstraint(tpe,n,(opt(name ~ COLON)) ~> (allExcept(AT,PRE,POST,DEDENT) | AT ~ PRE).*)}
 
   def valuesCompartment: Parser[ValuesCompartment] =
     "values" ~> indented(property, "value") ^^ ValuesCompartment

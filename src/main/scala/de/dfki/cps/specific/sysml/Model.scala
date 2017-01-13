@@ -3,7 +3,9 @@ package de.dfki.cps.specific.sysml
 import java.net.URI
 
 import de.dfki.cps.specific.sysml.Types.Classifier
-import org.eclipse.emf.ecore.resource.ResourceSet
+import org.eclipse.emf.ecore.EObject
+import org.eclipse.emf.ecore.resource.{Resource, ResourceSet}
+import org.eclipse.emf.ecore.resource.impl.ResourceImpl
 import org.eclipse.uml2.uml.Model
 import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
 
@@ -187,26 +189,22 @@ object ShortConstraint {
 }
 
 object Model {
-  private val cache = mutable.Map.empty[URI,Model]
-
-  def load(uri: URI)(implicit rs: ResourceSet): Model = {
+  def load(uri: URI, target: Resource = new ResourceImpl)(implicit rs: ResourceSet): Resource = {
     require(uri.isAbsolute, "URI is not absolute")
-    cache.getOrElseUpdate(uri, {
-      val source = Source.fromURI(uri)
-      var tokens: Reader[SysMLLexer.Token] = new IndentScanner(new SysMLLexer.Scanner(source.mkString))
-      SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
-        case SysMLParsers.Success(b: Diagram, _) =>
-          val synth = new Synthesis(uri.toString)
-          println(s"synthesizing $uri")
-          synth.structure(b)
-          synth.naming(b)
-          synth.parseConstraints(b)
-          println(s"[success] synthesized $uri")
-          synth.model
-        case SysMLParsers.NoSuccess(msg, i) =>
-          println(s"$msg [${i.pos}]:\n${i.pos.longString}")
-          sys.error(msg)
-      }
-    })
+    val source = Source.fromURI(uri)
+    var tokens: Reader[SysMLLexer.Token] = new IndentScanner(new SysMLLexer.Scanner(source.mkString))
+    SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
+      case SysMLParsers.Success(b: Diagram, _) =>
+        val synth = new Synthesis(uri.toString)
+        println(s"synthesizing $uri")
+        synth.structure(b)
+        synth.naming(b)
+        synth.parseConstraints(b)
+        println(s"[success] synthesized $uri")
+        target
+      case SysMLParsers.NoSuccess(msg, i) =>
+        println(s"$msg [${i.pos}]:\n${i.pos.longString}")
+        sys.error(msg)
+    }
   }
 }

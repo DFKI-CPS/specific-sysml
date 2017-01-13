@@ -3,7 +3,7 @@ package de.dfki.cps.specific.sysml
 import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
-import org.eclipse.emf.ecore.EModelElement
+import org.eclipse.emf.ecore.{EModelElement, EObject}
 import org.eclipse.ocl.pivot
 import org.eclipse.ocl.pivot.ExpressionInOCL
 import org.eclipse.ocl.pivot.utilities.{OCL, ParserException}
@@ -17,7 +17,8 @@ import org.eclipse.uml2.uml.util.UMLValidator
 import org.eclipse.uml2.uml.{Profile, PseudostateKind, UMLFactory}
 import Types.PrimitiveType
 import de.dfki.cps.specific.sysml.parser.{ParseError, Severity}
-import org.eclipse.emf.ecore.resource.ResourceSet
+import org.eclipse.emf.ecore.resource.{Resource, ResourceSet}
+import org.eclipse.emf.ecore.resource.impl.{ContentHandlerImpl, ResourceImpl, URIHandlerImpl}
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -46,7 +47,7 @@ object Synthesis {
   }
 }
 
-class Synthesis(name: String)(implicit library: ResourceSet) {
+class Synthesis(name: String, target: Resource = new ResourceImpl)(implicit library: ResourceSet) {
   Synthesis.init()
   /*
     * SysML
@@ -82,11 +83,11 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
   private val blocksFactory = BlocksFactory.eINSTANCE
   private val portsFactory = PortandflowsFactory.eINSTANCE
 
-  val resource = library.createResource(URI.createFileURI(s"./$name.uml"))
   val model = umlFactory.createModel()
 
   model.setName(name)
-  resource.getContents.add(model)
+  target.getContents.add(model)
+
 
   // PROFILE APPLICATIONS
   profs.getAllContents.asScala.foreach {
@@ -132,7 +133,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       val b = blocksFactory.createBlock()
       b.setBase_Class(c)
       c.setName(name)
-      owner.eResource().getContents.add(b)
+      target.getContents.add(b)
       owner.getPackagedElements.add(c)
       compartments.flatMap(_.content.map(x => structure(b, x)))
       member.uml = Some(c)
@@ -244,7 +245,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       b.setName(name)
       p.setBase_Port(b)
       c.getOwnedPorts.add(b)
-      resource.getContents.add(p)
+      target.getContents.add(p)
       member.uml = Some(b)
     case StateMachine(name, states) =>
       val c = owner.getBase_Class
@@ -602,9 +603,4 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     messages += ParseError(file,pos,Severity.Error,message)
   private def abort(pos: Position, message: String): Unit =
     messages += ParseError(file,pos,Severity.Error,message)
-
-  def save() = {
-    validate.validateModel(model,chain,new util.HashMap)
-    resource.save(Map.empty[Any,Any].asJava)
-  }
 }
