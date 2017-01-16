@@ -1,5 +1,6 @@
 package de.dfki.cps.specific.sysml
 
+import java.io.File
 import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
@@ -47,7 +48,9 @@ object Synthesis {
   }
 }
 
-class Synthesis(name: String, target: Resource = new ResourceImpl)(implicit library: ResourceSet) {
+class Synthesis(name: String)(implicit library: ResourceSet) {
+  val positions = mutable.Map.empty[EObject,Position].withDefaultValue(NoPosition)
+
   Synthesis.init()
   /*
     * SysML
@@ -71,11 +74,12 @@ class Synthesis(name: String, target: Resource = new ResourceImpl)(implicit libr
   val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"),true)
 
   def addPosAnnotation(elem: EModelElement, pos: Position) = if (pos != NoPosition) {
-    val annon = ecoreFactory.createEAnnotation()
+    /*val annon = ecoreFactory.createEAnnotation()
     annon.setSource("http://www.dfki.de/specific/SysML")
     annon.getDetails.put("line",pos.line.toString)
     annon.getDetails.put("column",pos.column.toString)
-    elem.getEAnnotations.add(annon)
+    elem.getEAnnotations.add(annon)*/
+    positions += elem -> pos
   }
 
   private val umlFactory = UMLFactory.eINSTANCE
@@ -84,10 +88,10 @@ class Synthesis(name: String, target: Resource = new ResourceImpl)(implicit libr
   private val portsFactory = PortandflowsFactory.eINSTANCE
 
   val model = umlFactory.createModel()
+  val temp = library.createResource(URI.createFileURI(File.createTempFile("model",".uml").getAbsolutePath))
 
   model.setName(name)
-  target.getContents.add(model)
-
+  temp.getContents.add(model)
 
   // PROFILE APPLICATIONS
   profs.getAllContents.asScala.foreach {
@@ -133,7 +137,7 @@ class Synthesis(name: String, target: Resource = new ResourceImpl)(implicit libr
       val b = blocksFactory.createBlock()
       b.setBase_Class(c)
       c.setName(name)
-      target.getContents.add(b)
+      temp.getContents.add(b)
       owner.getPackagedElements.add(c)
       compartments.flatMap(_.content.map(x => structure(b, x)))
       member.uml = Some(c)
@@ -245,7 +249,7 @@ class Synthesis(name: String, target: Resource = new ResourceImpl)(implicit libr
       b.setName(name)
       p.setBase_Port(b)
       c.getOwnedPorts.add(b)
-      target.getContents.add(p)
+      temp.getContents.add(p)
       member.uml = Some(b)
     case StateMachine(name, states) =>
       val c = owner.getBase_Class

@@ -189,18 +189,19 @@ object ShortConstraint {
 }
 
 object Model {
-  def load(uri: URI, target: Resource = new ResourceImpl)(implicit rs: ResourceSet): Resource = {
+  def load(uri: URI, name: String, target: Resource = new ResourceImpl)(implicit rs: ResourceSet): Resource = {
     require(uri.isAbsolute, "URI is not absolute")
     val source = Source.fromURI(uri)
     var tokens: Reader[SysMLLexer.Token] = new IndentScanner(new SysMLLexer.Scanner(source.mkString))
     SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
       case SysMLParsers.Success(b: Diagram, _) =>
-        val synth = new Synthesis(uri.toString)
+        val synth = new Synthesis(name)
         println(s"synthesizing $uri")
         synth.structure(b)
         synth.naming(b)
         synth.parseConstraints(b)
         println(s"[success] synthesized $uri")
+        target.getContents.addAll(synth.temp.getContents)
         target
       case SysMLParsers.NoSuccess(msg, i) =>
         println(s"$msg [${i.pos}]:\n${i.pos.longString}")

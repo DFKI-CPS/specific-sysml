@@ -23,10 +23,11 @@ object Test extends App {
   SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
     case SysMLParsers.Success(b: Diagram,_) =>
       val res = rs.createResource(URI.createFileURI("example.uml"))
-      val synth = new Synthesis("example",res)
+      val synth = new Synthesis("example")
       synth.structure(b)
       synth.naming(b)
       synth.parseConstraints(b)
+      res.getContents.addAll(synth.temp.getContents)
       res.save(new util.HashMap)
     case SysMLParsers.NoSuccess(msg,i) =>
       println(s"$msg [${i.pos}]:\n${i.pos.longString}")
