@@ -20,19 +20,23 @@ object SysMLParsers extends OclParsers {
   import SysMLTokens._
 
   def elementType: Parser[String] =
-    "package" | "block" | "state" ~ "machine" ^^^ "state machine"
+    "model" | "package" | "block" | "state" ~ "machine" ^^^ "state machine"
 
   def diagramKind: Parser[DiagramKind] = named("diagram kind", {
-    "bdd" ^^^ DiagramKind.BlockDefinitionDiagram
+    "bdd" ^^^ DiagramKind.BlockDefinitionDiagram |
+    "pkg" ^^^ DiagramKind.PackageDiagram
   })
 
   def diagramElementParsers(kind: DiagramKind): Parser[NamedElement] = kind match {
     case DiagramKind.BlockDefinitionDiagram => named("block or constraint", block)
+    case DiagramKind.PackageDiagram => named("realization", realization)
     case other => failure(s"unsupported diagram type $other")
   }
 
+  def realization: Parser[NamedElement] = ???
+
   def diagram: Parser[Diagram] =
-    ( diagramKind ~ enclosed(LEFT_SQUARE_BRACKET,elementType,RIGHT_SQUARE_BRACKET) ~ pathName[NamedElement] ~ enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ) >> {
+    ( diagramKind ~! enclosed(LEFT_SQUARE_BRACKET,elementType,RIGHT_SQUARE_BRACKET) ~ pathName[NamedElement] ~ enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ) >> {
       case knd ~ tpe ~ en ~ dn => separated(diagramElementParsers(knd)) ^^ (elems => Diagram(knd,tpe,en.parts,dn.mkString(" "),elems))
     }
 

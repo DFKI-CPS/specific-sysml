@@ -82,6 +82,8 @@ object MappingsParsers extends OclParsers {
     ) <~ DEDENT).? ^^ { case n ~ ms => AST.Retain(n.name, ms.getOrElse(Seq.empty))}
   )
 
+
+
   def dataMapping: Parser[AST.DataRefinement] = named("data mapping",
     simpleName ~ (RIGHT_ARROW ~! captureConstraint) ~ (INDENT ~> (
       mappings

@@ -22,7 +22,7 @@ object Test extends App {
 
   SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
     case SysMLParsers.Success(b: Diagram,_) =>
-      val res = rs.createResource(URI.createFileURI("example.uml"))
+      val res = rs.createResource(URI.createFileURI("example.ecore"))
       val synth = new Synthesis("example")
       synth.structure(b)
       synth.naming(b)

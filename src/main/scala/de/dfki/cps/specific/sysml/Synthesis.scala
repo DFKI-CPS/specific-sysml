@@ -4,7 +4,7 @@ import java.io.File
 import java.util
 
 import org.eclipse.emf.common.util.{Diagnostic, DiagnosticChain, URI}
-import org.eclipse.emf.ecore.{EModelElement, EObject}
+import org.eclipse.emf.ecore.{EModelElement, EObject, EcorePackage}
 import org.eclipse.ocl.pivot
 import org.eclipse.ocl.pivot.ExpressionInOCL
 import org.eclipse.ocl.pivot.utilities.{OCL, ParserException}
@@ -15,11 +15,11 @@ import org.eclipse.papyrus.sysml.portandflows.{PortandflowsFactory, Portandflows
 import org.eclipse.papyrus.sysml.util.SysmlResource
 import org.eclipse.uml2.uml
 import org.eclipse.uml2.uml.util.UMLValidator
-import org.eclipse.uml2.uml.{Profile, PseudostateKind, UMLFactory}
+import org.eclipse.uml2.uml.{Model, Profile, PseudostateKind, UMLFactory}
 import Types.PrimitiveType
 import de.dfki.cps.specific.sysml.parser.{ParseError, Severity}
 import org.eclipse.emf.ecore.resource.{Resource, ResourceSet}
-import org.eclipse.emf.ecore.resource.impl.{ContentHandlerImpl, ResourceImpl, URIHandlerImpl}
+import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
@@ -41,6 +41,8 @@ object Synthesis {
     library.getURIConverter.getURIMap.put(URI.createURI(SysmlResource.SYSML_PROFILE_URI), sysml_profile_uri)
     org.eclipse.uml2.uml.resources.util.UMLResourcesUtil.init(library)
     uml.resources.util.UMLResourcesUtil.initPackageRegistry(library.getPackageRegistry)
+    library.getResourceFactoryRegistry.getExtensionToFactoryMap.put("ecore", new EcoreResourceFactoryImpl)
+    library.getPackageRegistry put (EcorePackage.eNS_URI, EcorePackage.eINSTANCE)
     library.getPackageRegistry put (uml.UMLPackage.eNS_URI, uml.UMLPackage.eINSTANCE)
     library.getPackageRegistry put (sysml.SysmlPackage.eNS_URI, sysml.SysmlPackage.eINSTANCE)
     library.getPackageRegistry put (BlocksPackage.eNS_URI, BlocksPackage.eINSTANCE)
@@ -87,20 +89,24 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
   private val blocksFactory = BlocksFactory.eINSTANCE
   private val portsFactory = PortandflowsFactory.eINSTANCE
 
-  val model = umlFactory.createModel()
   val temp = library.createResource(URI.createFileURI(File.createTempFile("model",".uml").getAbsolutePath))
 
-  model.setName(name)
-  temp.getContents.add(model)
+  val models = mutable.Map.empty[String,Model]
 
   // PROFILE APPLICATIONS
-  profs.getAllContents.asScala.foreach {
-    case x: Profile if appliedProfiles contains(x.getName) =>
-      val pappl = model.createProfileApplication()
-      pappl.createEAnnotation("http://www.eclipse.org/uml2/2.0.0/UML").getReferences.add(x.getDefinition)
-      pappl.setAppliedProfile(x)
-    case _ =>
-  }
+  def getOrCreateModel(name: String): Model = models.getOrElseUpdate(name, {
+    val model = umlFactory.createModel()
+    model.setName(name)
+    temp.getContents.add(model)
+    profs.getAllContents.asScala.foreach {
+      case x: Profile if appliedProfiles contains (x.getName) =>
+        val pappl = model.createProfileApplication()
+        pappl.createEAnnotation("http://www.eclipse.org/uml2/2.0.0/UML").getReferences.add(x.getDefinition)
+        pappl.setAppliedProfile(x)
+      case _ =>
+    }
+    model
+  })
 
   val chain = new DiagnosticChain {
     def merge(diagnostic: Diagnostic) =
@@ -122,8 +128,14 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
   //////////////////////////////////////////////////////////////////////////////
 
   def structure(diagram: Diagram): Unit = diagram match {
+    case Diagram(DiagramKind.BlockDefinitionDiagram, "model", meName, name, content) =>
+      if (meName.size != 1) error(diagram.pos, "model elements must have a top level name")
+      val model = getOrCreateModel(meName.head)
+      content.map(c => structure(model, c))
+      diagram.uml = Some(model)
     case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
-      val pkg = meName.foldLeft[uml.Package](model)(getOrCreatePackage)
+      if (meName.size < 2) error(diagram.pos, "package elements must be contained in a model and fully qualfied")
+      val pkg = meName.tail.foldLeft[uml.Package](getOrCreateModel(meName.head))(getOrCreatePackage)
       content.map(c => structure(pkg, c))
       diagram.uml = Some(pkg)
     case other =>
@@ -253,7 +265,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       member.uml = Some(b)
     case StateMachine(name, states) =>
       val c = owner.getBase_Class
-      val stm = umlFactory.createStateMachine()
+      val stm = umlFactory.createProtocolStateMachine()
       addPosAnnotation(stm,member.pos)
       val reg = umlFactory.createRegion()
       stm.setName(name)
@@ -307,6 +319,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       state.uml = Some(st)
       if (isInitial) {
         val init = umlFactory.createPseudostate()
+        init.setName("Initial")
         init.setKind(PseudostateKind.INITIAL_LITERAL)
         val tans = umlFactory.createTransition()
         tans.setSource(init)
@@ -332,7 +345,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     case Transition(trigger, guard, action, InlineTargetState(st)) =>
       val reg = source.getContainer
       structure(reg, st).foreach { st =>
-        val ts = umlFactory.createTransition()
+        val ts = umlFactory.createProtocolTransition()
         addPosAnnotation(ts,trans.pos)
         trans.uml = Some(ts)
         ts.setSource(source)
@@ -342,7 +355,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       }
     case Transition(trigger, guard, action, UnresolvedTargetStateName(name)) =>
       val reg = source.getContainer
-      val ts = umlFactory.createTransition()
+      val ts = umlFactory.createProtocolTransition()
       addPosAnnotation(ts,trans.pos)
       trans.uml = Some(ts)
       ts.setSource(source)
@@ -350,7 +363,9 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       trigger.foreach(structure(ts,_))
   }
 
-  def structure(ts: uml.Transition, trigger: Trigger): Unit = trigger match {
+  val timeEvents = mutable.Map.empty[Long,uml.TimeEvent]
+
+  def structure(ts: uml.ProtocolTransition, trigger: Trigger): Unit = trigger match {
     case trig@Trigger.Receive(port,v) =>
       val t = umlFactory.createTrigger()
       trig.uml = Some(t)
@@ -358,16 +373,20 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     case trig@Trigger.Timeout(duration) =>
       val t = umlFactory.createTrigger()
       addPosAnnotation(t,trig.pos)
-      val e = umlFactory.createTimeEvent()
-      e.setIsRelative(true)
-      val time = umlFactory.createTimeExpression()
-      val o = umlFactory.createOpaqueExpression()
-      o.getLanguages.add("SCALA")
-      o.getBodies.add(duration.duration.toString)
-      addPosAnnotation(o,duration.pos)
-      time.setExpr(o)
-      e.setWhen(time)
-      model.getPackagedElements.add(e)
+      val e = timeEvents.getOrElseUpdate(duration.duration.length, {
+        val e = umlFactory.createTimeEvent()
+        e.setName("timeEvent_" + duration.duration.length)
+        e.setIsRelative(true)
+        val time = umlFactory.createTimeExpression()
+        val o = umlFactory.createOpaqueExpression()
+        o.getLanguages.add("SCALA")
+        o.getBodies.add(duration.duration.toString)
+        addPosAnnotation(o,duration.pos)
+        time.setExpr(o)
+        e.setWhen(time)
+        ts.getModel.getPackagedElements.add(e)
+        e
+      })
       t.setEvent(e)
       trig.uml = Some(t)
       ts.getTriggers.add(t)
@@ -419,7 +438,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
       content.foreach(naming)
       elem.uml.collect {
-        case pkg: uml.Package => validate.validatePackage(pkg,chain,context)
+        case pkg: uml.Package => //validate.validatePackage(pkg,chain,context)
       }
     case b: Block =>
       b.members.foreach(naming)
@@ -461,6 +480,10 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
               case _ => None
             }
             opp.foreach(op.setOpposite)
+            Option(op.getAssociation).foreach { assoc =>
+              val name = "assoc_" + assoc.getMemberEnds.asScala.map(_.getName).sorted.mkString("_")
+              assoc.setName(name)
+            }
           }
       }
     case Property(name,tpe,props,constraint) =>
@@ -596,6 +619,11 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     case other =>
       error(elem.pos, s"could not synthesize $other")
   }
+
+  val rel = umlFactory.createRealization()
+  rel.getClients
+  rel.getSuppliers
+  rel.getModel
 
   val messages: mutable.Buffer[ParseError] = mutable.Buffer.empty
 

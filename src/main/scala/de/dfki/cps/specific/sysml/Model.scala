@@ -47,6 +47,8 @@ case class Package(name: String, blocks: Seq[Block], constraints: Seq[Unprocesse
   def members: Seq[NamedElement] = blocks ++ constraints
 }
 
+case class Realization(name: String, supplier: Name, client: UnprocessedConstraint) extends NamedElement
+
 trait Type
 
 case class Block(rawName: String, compartments: Seq[BlockCompartment], comments: Seq[Comment]) extends Classifier(rawName) with DiagramContent[DiagramKind.BlockDefinitionDiagram.type] {
