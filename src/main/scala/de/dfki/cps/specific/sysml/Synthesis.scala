@@ -15,7 +15,7 @@ import org.eclipse.papyrus.sysml.portandflows.{PortandflowsFactory, Portandflows
 import org.eclipse.papyrus.sysml.util.SysmlResource
 import org.eclipse.uml2.uml
 import org.eclipse.uml2.uml.util.UMLValidator
-import org.eclipse.uml2.uml.{Model, Profile, PseudostateKind, UMLFactory}
+import org.eclipse.uml2.uml.{Model, Profile, PseudostateKind, UMLFactory, UMLPackage}
 import Types.PrimitiveType
 import de.dfki.cps.specific.sysml.parser.{ParseError, Severity}
 import org.eclipse.emf.ecore.resource.{Resource, ResourceSet}
@@ -592,7 +592,14 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
                   addPosAnnotation(xc,n.pos)
                 }
                 xc.getConstrainedElements.add(op)
-                op.getOwnedRules.add(xc)
+                tpe match {
+                  case ConstraintType.Post =>
+                    op.getPostconditions.add(xc)
+                  case ConstraintType.Body =>
+                    op.setBodyCondition(xc)
+                  case ConstraintType.Pre =>
+                    op.getPreconditions.add(xc)
+                }
               } catch {
                 case e: ParserException =>
                   error(uc.pos, e.getMessage)
@@ -602,6 +609,29 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     case Reference(name,tpe,opposite,props,constraint) =>
       constraint.foreach(parseConstraints)
     case Property(name,tpe,props,constraint) =>
+      constraint.foreach {
+        case uc@UnprocessedConstraint(tpe,n,str) =>
+          val name = elem.uml.collect {
+            case p: uml.Property =>
+              try {
+                val prop = ocl.getMetamodelManager.getASOf(classOf[pivot.Property], p)
+                val oclHelper = ocl.createOCLHelper(prop)
+                val constr = tpe match {
+                  case ConstraintType.Derive =>
+                    oclHelper.createDerivedValueExpression(str)
+                }
+                val xp = umlFactory.createOpaqueExpression()
+                xp.getBodies.add(str)
+                xp.getLanguages.add("OCL")
+                addPosAnnotation(xp, uc.pos)
+                p.setIsDerived(true)
+                p.setDefaultValue(xp)
+              } catch {
+                case e: ParserException =>
+                  error(uc.pos, e.getMessage)
+              }
+          }
+      }
     case Port(name,dir,tpe) =>
     case StateMachine(name,states) =>
       states.foreach(parseConstraints)
