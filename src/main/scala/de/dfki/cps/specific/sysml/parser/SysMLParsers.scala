@@ -143,10 +143,10 @@ object SysMLParsers extends OclParsers {
 
   def reference: Parser[Reference] =
     name ~ typing ~ opt(propertyList[ReferenceProperty](orderedProperty,uniqueProperty,subsetsProperty)) ~ opt(opposite) ~ opt(indented(ignoreIndentation(propertyConstraint).*,"constraint")) ^^ {
-      case name ~ tpe ~ ps ~ opp ~ cs => Reference(name.name,tpe,opp.map(_.name),ps.toSeq.flatten,cs.map(_.flatten).getOrElse(Nil)).at(name)
+      case name ~ tpe ~ ps ~ opp ~ cs => Reference(name.name,tpe,opp.map(_._1).getOrElse(false),opp.map(_._2.name),ps.toSeq.flatten,cs.map(_.flatten).getOrElse(Nil)).at(name)
     }
 
-  def opposite: Parser[PositionedName] = LEFT_ARROW ~> name
+  def opposite: Parser[(Boolean,PositionedName)] = ((LEFT_ARROW ^^^ false | NOT_EQUAL ^^^ true) ~! name) ^^ { case a~b => (a,b) }
 
   def operationsCompartment: Parser[OperationsCompartment] =
     "operations" ~> indented(operation, "operation") ^^ OperationsCompartment

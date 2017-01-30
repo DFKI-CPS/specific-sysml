@@ -105,6 +105,7 @@ case class Property(
 case class Reference(
     name: String,
     typeAnnotation: TypeAnnotation,
+    isComposite: Boolean,
     oppositeName: Option[String],
     properties: Seq[ReferenceProperty],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember with TypedElement {

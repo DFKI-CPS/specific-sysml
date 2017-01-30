@@ -5,7 +5,7 @@ block Building
   references
     gate: Building[*] <- building
     building: Building[*] <- gate
-    org_dom: Door[*] <- org
+    org_dom: Door[*] <> org
 
 block Person
   operations

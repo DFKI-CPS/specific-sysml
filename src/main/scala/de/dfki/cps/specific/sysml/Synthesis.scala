@@ -186,7 +186,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       }
       member.uml = Some(op)
       params.foreach(structure(op,_))
-    case Reference(name,tpe,oppositeName,props,constraint) =>
+    case Reference(name,tpe,isComposite,oppositeName,props,constraint) =>
       val c = owner.getBase_Class
       val p = umlFactory.createProperty()
       addPosAnnotation(p,member.pos)
@@ -467,7 +467,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
           resolveTypeName(op.getOperation.getClass_,tpe.name)
             .foreach(op.setType)
       }
-    case Reference(name,tpe,opposite,props,constraint) =>
+    case Reference(name,tpe,isComposite,opposite,props,constraint) =>
       elem.uml.collect {
         case op: uml.Property =>
           resolveTypeName(op.getClass_,tpe.name).foreach{ tpe =>
@@ -479,6 +479,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
                 }
               case _ => None
             }
+            if (isComposite) op.setIsComposite(true)
             opp.foreach(op.setOpposite)
             Option(op.getAssociation).foreach { assoc =>
               val sorted = assoc.getMemberEnds.asScala.sortBy(_.getName)
@@ -615,7 +616,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
               }
           }
       }
-    case Reference(name,tpe,opposite,props,constraint) =>
+    case Reference(name,tpe,isComposite,opposite,props,constraint) =>
       constraint.foreach(parseConstraints)
     case Property(name,tpe,props,constraint) =>
       constraint.foreach {
