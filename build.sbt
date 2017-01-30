@@ -1,6 +1,6 @@
 organization := "de.dfki.cps"
 name := "specific-sysml"
-version := "0.1.12"
+version := "0.1.13"
 scalaVersion := "2.11.8"
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 bintrayOrganization := Some("dfki-cps")

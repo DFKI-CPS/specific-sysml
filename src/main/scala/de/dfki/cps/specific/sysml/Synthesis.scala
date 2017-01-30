@@ -481,7 +481,10 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
             }
             opp.foreach(op.setOpposite)
             Option(op.getAssociation).foreach { assoc =>
-              val name = "assoc_" + assoc.getMemberEnds.asScala.map(_.getName).sorted.mkString("_")
+              val sorted = assoc.getMemberEnds.asScala.sortBy(_.getName)
+              val name = "assoc_" + sorted.map(_.getName).mkString("_")
+              if (assoc.getMemberEnds.get(0) != sorted.head)
+                assoc.getMemberEnds.move(0,1)
               assoc.setName(name)
             }
           }
