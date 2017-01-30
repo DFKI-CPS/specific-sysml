@@ -555,7 +555,10 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
                 xp.getLanguages.add("OCL")
                 xc.setSpecification(xp)
                 xc.getConstrainedElements.add(c)
-                n.foreach { n =>
+                n.fold {
+                  val hashName = constr.toString.hashCode
+                  xc.setName(tpe.toString + "_" + hashName)
+                } { n =>
                   xc.setName(n.name)
                   addPosAnnotation(xc,n.pos)
                 }
@@ -590,7 +593,10 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
                 xp.getLanguages.add("OCL")
                 addPosAnnotation(xp,uc.pos)
                 xc.setSpecification(xp)
-                n.foreach { n =>
+                n.fold {
+                  val hashName = constr.toString.hashCode
+                  xc.setName(tpe.toString + "_" + hashName)
+                } { n =>
                   xc.setName(n.name)
                   addPosAnnotation(xc,n.pos)
                 }
@@ -626,7 +632,14 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
                 val xp = umlFactory.createOpaqueExpression()
                 xp.getBodies.add(str)
                 xp.getLanguages.add("OCL")
-                addPosAnnotation(xp, uc.pos)
+                n.fold {
+                  val hashName = constr.toString.hashCode
+                  xp.setName(tpe.toString + "_" + hashName)
+                  addPosAnnotation(xp, uc.pos)
+                } { n =>
+                  xp.setName(n.name)
+                  addPosAnnotation(xp,n.pos)
+                }
                 p.setIsDerived(true)
                 p.setDefaultValue(xp)
               } catch {
