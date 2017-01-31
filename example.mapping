@@ -1,7 +1,9 @@
-from: ./example.sysml
-to:   ./example.sysml
+mappings
 --------------------------------------------------------------------------------
-acs
-  Building
-    gate -> org_dom
-  Door -> Door
+
+acs-0 <|------------- acs-1
+  acs <|------------- acs
+    Building <|------ Building
+      gate <|-------- org_dom
+    Door <|---------- Door
+

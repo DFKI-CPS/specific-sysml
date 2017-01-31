@@ -15,10 +15,11 @@ import org.eclipse.papyrus.sysml.portandflows.{PortandflowsFactory, Portandflows
 import org.eclipse.papyrus.sysml.util.SysmlResource
 import org.eclipse.uml2.uml
 import org.eclipse.uml2.uml.util.UMLValidator
-import org.eclipse.uml2.uml.{Model, Profile, PseudostateKind, UMLFactory, UMLPackage}
+import org.eclipse.uml2.uml.{Model, Profile, PseudostateKind, UMLFactory}
 import Types.PrimitiveType
 import de.dfki.cps.specific.sysml.parser.{ParseError, Severity}
 import org.eclipse.emf.ecore.resource.{Resource, ResourceSet}
+import org.eclipse.emf.ecore.resource.impl.{ResourceFactoryImpl, ResourceImpl}
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl
 
 import scala.collection.JavaConverters._
@@ -28,12 +29,10 @@ import scala.util.parsing.input.{NoPosition, Position}
 object Synthesis {
   var initialized = false
   def init() = if (!initialized) {
-    println("initializing OCL components...")
     pivot.uml.UMLStandaloneSetup.init()
     org.eclipse.ocl.xtext.essentialocl.EssentialOCLStandaloneSetup.doSetup()
     org.eclipse.ocl.pivot.model.OCLstdlib.install()
     initialized = true
-    println("[success] initialized OCL components")
   }
 
   def prepareLibrary(library: ResourceSet): Unit = {
@@ -47,6 +46,13 @@ object Synthesis {
     library.getPackageRegistry put (sysml.SysmlPackage.eNS_URI, sysml.SysmlPackage.eINSTANCE)
     library.getPackageRegistry put (BlocksPackage.eNS_URI, BlocksPackage.eINSTANCE)
     library.getPackageRegistry put (PortandflowsPackage.eNS_URI, PortandflowsPackage.eINSTANCE)
+    library.getResourceFactoryRegistry.getExtensionToFactoryMap.put("sysml",new ResourceFactoryImpl {
+      override def createResource(uri: URI): Resource = {
+        val file = new File(uri.toFileString)
+        if (file.exists())
+          
+      }
+    })
   }
 }
 
@@ -67,12 +73,10 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     * StateMachines
     * UseCases
     */
-  println("initalizing synthesizer")
 
   private val appliedProfiles = Set("SysML","Blocks","PortAndFlows")
 
-  private val primitives = library.getResource(URI.createURI(uml.resource.UMLResource.UML_PRIMITIVE_TYPES_LIBRARY_URI),true)
-
+  val primitives = library.getEObject(URI.createURI("pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"),true).asInstanceOf[uml.Model]
   val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"),true)
 
   def addPosAnnotation(elem: EModelElement, pos: Position) = if (pos != NoPosition) {
@@ -97,6 +101,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
   def getOrCreateModel(name: String): Model = models.getOrElseUpdate(name, {
     val model = umlFactory.createModel()
     model.setName(name)
+    val primitivesImport = model.createPackageImport(primitives)
     temp.getContents.add(model)
     profs.getAllContents.asScala.foreach {
       case x: Profile if appliedProfiles contains (x.getName) =>
@@ -120,8 +125,6 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
   val context = new util.HashMap[AnyRef,AnyRef]()
 
   val validate = new UMLValidator
-
-  println("[success] initalized synthesizer")
 
   //////////////////////////////////////////////////////////////////////////////
   /// STRUCTURE  ///////////////////////////////////////////////////////////////
@@ -151,8 +154,8 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       c.setName(name)
       temp.getContents.add(b)
       owner.getPackagedElements.add(c)
-      compartments.flatMap(_.content.map(x => structure(b, x)))
       member.uml = Some(c)
+      compartments.flatMap(_.content.map(x => structure(b, x)))
     case other =>
       error(other.pos, s"could not synthesize $other")
   }
@@ -196,6 +199,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
         addPosAnnotation(p.getLowerValue,x.pos)
         addPosAnnotation(p.getUpperValue,x.pos)
       }
+      p.setIsComposite(isComposite)
       props.collect {
         case pr@TypedElementProperty.Ordered(v) =>
           if (p.eIsSet(p.eClass().getEStructuralFeature("isOrdered"))) {
@@ -410,7 +414,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     def resolveTypeNameInternal(scope: uml.Namespace, name: Name): Option[uml.Type] = name match {
       case ResolvedName(Types.Unit | Types.Null) => Some(null)
       case ResolvedName(t: PrimitiveType[_]) =>
-        val primTypes = primitives.getContents.get(0).eContents().asScala
+        val primTypes = primitives.eContents().asScala
         primTypes.collectFirst {
           case tpe: uml.Type if tpe.getName == t.name => tpe
         }
@@ -438,7 +442,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
       content.foreach(naming)
       elem.uml.collect {
-        case pkg: uml.Package => //validate.validatePackage(pkg,chain,context)
+        case pkg: uml.Package => validate.validatePackage(pkg,chain,context)
       }
     case b: Block =>
       b.members.foreach(naming)
@@ -472,6 +476,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
         case op: uml.Property =>
           resolveTypeName(op.getClass_,tpe.name).foreach{ tpe =>
             op.setType(tpe)
+
             val opp = (opposite, tpe) match {
               case (Some(o),tpe: uml.Classifier) =>
                 tpe.getAttributes.asScala.find { p =>
@@ -479,14 +484,16 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
                 }
               case _ => None
             }
-            if (isComposite) op.setIsComposite(true)
-            opp.foreach(op.setOpposite)
-            Option(op.getAssociation).foreach { assoc =>
-              val sorted = assoc.getMemberEnds.asScala.sortBy(_.getName)
-              val name = "assoc_" + sorted.map(_.getName).mkString("_")
-              if (assoc.getMemberEnds.get(0) != sorted.head)
-                assoc.getMemberEnds.move(0,1)
-              assoc.setName(name)
+            opp.foreach { opp =>
+              if (op.isComposite && opp.isComposite)
+                error(elem.pos, "only one end of an association may be composite (<>)")
+              if (op.getAssociation == null && opp.getName >= op.getName) {
+                val assoc = umlFactory.createAssociation()
+                assoc.setName(s"A_${op.getName}_${opp.getName}")
+                assoc.getMemberEnds.add(op)
+                assoc.getMemberEnds.add(opp)
+                opp.getModel.getPackagedElements.add(assoc)
+              }
             }
           }
       }
