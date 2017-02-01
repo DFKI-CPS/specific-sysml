@@ -24,21 +24,54 @@ object SysMLParsers extends OclParsers {
 
   def diagramKind: Parser[DiagramKind] = named("diagram kind", {
     "bdd" ^^^ DiagramKind.BlockDefinitionDiagram |
-    "pkg" ^^^ DiagramKind.PackageDiagram
+    "pkg" ^^^ DiagramKind.PackageDiagram |
+    "req" ^^^ DiagramKind.RequirementDiagram
   })
 
   def diagramElementParsers(kind: DiagramKind): Parser[NamedElement] = kind match {
     case DiagramKind.BlockDefinitionDiagram => named("block or constraint", block)
-    case DiagramKind.PackageDiagram => named("realization", realization)
+    case DiagramKind.RequirementDiagram => named("requirement", requirement)
     case other => failure(s"unsupported diagram type $other")
   }
 
-  def realization: Parser[NamedElement] = ???
+  def requirement: Parser[NamedElement] =
+    "requirement" ~> name ~ indented(textLine, "requirement text") ^^ {
+      case n~ls => Requirement(n.name,ls.mkString(" ").replaceAll("\\s+"," ")) at n
+    }
+
+  def textLine: Parser[String] = Parser[String] { input =>
+    val first = input.offset
+    val parser = allExcept(INDENT,DEDENT,SEPARATOR).+
+    parser(input) match {
+      case Success(_,next) =>
+        val c = input.source.subSequence(first, next.offset).toString
+        Success(c,next)
+      case err: NoSuccess => err
+    }
+  }
+
+  def realization: Parser[Mapping] = (pathName[NamedElement] <~ (REALIZATION ~ MINUS.*)) ~ captureConstraint(ConstraintType.Query,None,allExcept(INDENT,SEPARATOR,DEDENT,EOF).*) ~ opt(indented(realization,"sub realization")) ^^ {
+    case n~c~ss => Mapping(n,c,ss.getOrElse(Nil))
+  }
+
+  def include: Parser[Seq[String]] =
+    ( "include" ~> textLine ^^ (l => Seq(l))
+    | "include" ~> indented(textLine, "file location") )
+
+
+  def file = diagram | project
 
   def diagram: Parser[Diagram] =
     ( diagramKind ~! enclosed(LEFT_SQUARE_BRACKET,elementType,RIGHT_SQUARE_BRACKET) ~ pathName[NamedElement] ~ enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ) >> {
       case knd ~ tpe ~ en ~ dn => separated(diagramElementParsers(knd)) ^^ (elems => Diagram(knd,tpe,en.parts,dn.mkString(" "),elems))
     }
+
+  def project: Parser[Project] =
+    "project" ~! enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ~
+       separated(include | realization) ^^ {
+      case _ ~ name ~ elems => Project(name.mkString(" "),(elems collect every[Seq[String]]).flatten,elems collect every[Mapping])
+    }
+
 
   def pkg: Parser[Package] = PACKAGE ~> name ~ separated(block) ^^ {
     case n ~ bs => Package(n.name,bs collect every[Block], bs collect every[UnprocessedConstraint], Nil).at(n)

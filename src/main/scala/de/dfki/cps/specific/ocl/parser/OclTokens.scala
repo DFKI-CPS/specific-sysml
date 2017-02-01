@@ -47,7 +47,7 @@ object OclTokens extends Tokens {
     GREATER_OR_EQUAL, GREATER_THAN, LEFT_BRACE, LEFT_PARENS,
     LEFT_SQUARE_BRACKET, LESS_OR_EQUAL, LESS_THAN, MINUS, NOT_EQUAL, PIPE, PLUS,
     RIGHT_ARROW, RIGHT_BRACE, RIGHT_PARENS, RIGHT_SQUARE_BRACKET, SEMICOLON,
-    SLASH, STAR, QUESTIONMARK
+    SLASH, STAR, QUESTIONMARK, REALIZATION
   ) (Ordering.by[Delimiter,(Int,String)](k => (k.chars.length, k.chars)).reverse)
 
   abstract class Delimiter(val chars: String) extends Token
@@ -78,6 +78,7 @@ object OclTokens extends Tokens {
   case object SLASH extends Delimiter("/")
   case object STAR extends Delimiter("*")
   case object QUESTIONMARK extends Delimiter("?")
+  case object REALIZATION extends Delimiter("<|-")
 
   val oclReserved = Set(
     "Bag",

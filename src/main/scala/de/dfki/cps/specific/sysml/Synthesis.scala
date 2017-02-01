@@ -19,12 +19,12 @@ import org.eclipse.uml2.uml.{Model, Profile, PseudostateKind, UMLFactory}
 import Types.PrimitiveType
 import de.dfki.cps.specific.sysml.parser.{ParseError, Severity}
 import org.eclipse.emf.ecore.resource.{Resource, ResourceSet}
-import org.eclipse.emf.ecore.resource.impl.{ResourceFactoryImpl, ResourceImpl}
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl
+import org.eclipse.papyrus.sysml.requirements.RequirementsFactory
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.util.parsing.input.{NoPosition, Position}
+import scala.util.parsing.input.{NoPosition, Position, Reader}
 
 object Synthesis {
   var initialized = false
@@ -46,17 +46,11 @@ object Synthesis {
     library.getPackageRegistry put (sysml.SysmlPackage.eNS_URI, sysml.SysmlPackage.eINSTANCE)
     library.getPackageRegistry put (BlocksPackage.eNS_URI, BlocksPackage.eINSTANCE)
     library.getPackageRegistry put (PortandflowsPackage.eNS_URI, PortandflowsPackage.eINSTANCE)
-    library.getResourceFactoryRegistry.getExtensionToFactoryMap.put("sysml",new ResourceFactoryImpl {
-      override def createResource(uri: URI): Resource = {
-        val file = new File(uri.toFileString)
-        if (file.exists())
-          
-      }
-    })
   }
 }
 
-class Synthesis(name: String)(implicit library: ResourceSet) {
+class Synthesis(resource: Resource) {
+  val library = resource.getResourceSet
   val positions = mutable.Map.empty[EObject,Position].withDefaultValue(NoPosition)
 
   Synthesis.init()
@@ -74,12 +68,12 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     * UseCases
     */
 
-  private val appliedProfiles = Set("SysML","Blocks","PortAndFlows")
+  private val appliedProfiles = Set("SysML","Blocks","PortAndFlows","Requirements")
 
   val primitives = library.getEObject(URI.createURI("pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"),true).asInstanceOf[uml.Model]
   val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"),true)
 
-  def addPosAnnotation(elem: EModelElement, pos: Position) = if (pos != NoPosition) {
+  def addPosAnnotation(elem: EObject, pos: Position) = if (pos != NoPosition) {
     /*val annon = ecoreFactory.createEAnnotation()
     annon.setSource("http://www.dfki.de/specific/SysML")
     annon.getDetails.put("line",pos.line.toString)
@@ -89,11 +83,10 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
   }
 
   private val umlFactory = UMLFactory.eINSTANCE
+  private val requirementsFactory = RequirementsFactory.eINSTANCE
   private val ecoreFactory = org.eclipse.emf.ecore.EcoreFactory.eINSTANCE
   private val blocksFactory = BlocksFactory.eINSTANCE
   private val portsFactory = PortandflowsFactory.eINSTANCE
-
-  val temp = library.createResource(URI.createFileURI(File.createTempFile("model",".uml").getAbsolutePath))
 
   val models = mutable.Map.empty[String,Model]
 
@@ -102,7 +95,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     val model = umlFactory.createModel()
     model.setName(name)
     val primitivesImport = model.createPackageImport(primitives)
-    temp.getContents.add(model)
+    resource.getContents.add(model)
     profs.getAllContents.asScala.foreach {
       case x: Profile if appliedProfiles contains (x.getName) =>
         val pappl = model.createProfileApplication()
@@ -131,12 +124,12 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
   //////////////////////////////////////////////////////////////////////////////
 
   def structure(diagram: Diagram): Unit = diagram match {
-    case Diagram(DiagramKind.BlockDefinitionDiagram, "model", meName, name, content) =>
+    case Diagram(_, "model", meName, name, content) =>
       if (meName.size != 1) error(diagram.pos, "model elements must have a top level name")
       val model = getOrCreateModel(meName.head)
       content.map(c => structure(model, c))
       diagram.uml = Some(model)
-    case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
+    case Diagram(_, "package", meName, name, content) =>
       if (meName.size < 2) error(diagram.pos, "package elements must be contained in a model and fully qualfied")
       val pkg = meName.tail.foldLeft[uml.Package](getOrCreateModel(meName.head))(getOrCreatePackage)
       content.map(c => structure(pkg, c))
@@ -150,12 +143,25 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       val c = umlFactory.createClass()
       addPosAnnotation(c,member.pos)
       val b = blocksFactory.createBlock()
+      addPosAnnotation(b,member.pos)
       b.setBase_Class(c)
       c.setName(name)
-      temp.getContents.add(b)
+      resource.getContents.add(b)
       owner.getPackagedElements.add(c)
       member.uml = Some(c)
       compartments.flatMap(_.content.map(x => structure(b, x)))
+    case Requirement(name, text) =>
+      val c = umlFactory.createClass()
+      addPosAnnotation(c,member.pos)
+      c.setName(name)
+      val r = requirementsFactory.createRequirement()
+      addPosAnnotation(r,member.pos)
+      r.setBase_Class(c)
+      r.setText(text)
+      r.setId(name)
+      owner.getPackagedElements.add(c)
+      resource.getContents.add(r)
+      member.uml = Some(c)
     case other =>
       error(other.pos, s"could not synthesize $other")
   }
@@ -265,7 +271,7 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
       b.setName(name)
       p.setBase_Port(b)
       c.getOwnedPorts.add(b)
-      temp.getContents.add(p)
+      resource.getContents.add(p)
       member.uml = Some(b)
     case StateMachine(name, states) =>
       val c = owner.getBase_Class
@@ -439,11 +445,12 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
   }
 
   def naming(elem: Element): Unit = elem match {
-    case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
+    case Diagram(_, "package", meName, name, content) =>
       content.foreach(naming)
       elem.uml.collect {
         case pkg: uml.Package => validate.validatePackage(pkg,chain,context)
       }
+    case r: Requirement => // nothing to do
     case b: Block =>
       b.members.foreach(naming)
       elem.uml.collect {
@@ -545,8 +552,9 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
   }
 
   def parseConstraints(elem: Element): Unit = elem match {
-    case Diagram(DiagramKind.BlockDefinitionDiagram, "package", meName, name, content) =>
+    case Diagram(_, "package", meName, name, content) =>
       content.foreach(parseConstraints)
+    case r: Requirement => // nothing to do
     case b: Block =>
       b.members.foreach {
         case uc@UnprocessedConstraint(tpe,n,str) =>
@@ -623,33 +631,36 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
               }
           }
       }
-    case Reference(name,tpe,isComposite,opposite,props,constraint) =>
-      constraint.foreach(parseConstraints)
-    case Property(name,tpe,props,constraint) =>
-      constraint.foreach {
+    case Reference(name,tpe,isComposite,opposite,props,constraints) =>
+
+    case Property(name,tpe,props,constraints) =>
+      constraints.foreach {
         case uc@UnprocessedConstraint(tpe,n,str) =>
           val name = elem.uml.collect {
-            case p: uml.Property =>
+            case op: uml.Property =>
               try {
-                val prop = ocl.getMetamodelManager.getASOf(classOf[pivot.Property], p)
-                val oclHelper = ocl.createOCLHelper(prop)
-                val constr = tpe match {
+                val opn = ocl.getMetamodelManager.getASOf(classOf[pivot.Property],op)
+                val oclHelper = ocl.createOCLHelper(opn)
+                val constr: ExpressionInOCL = tpe match {
                   case ConstraintType.Derive =>
                     oclHelper.createDerivedValueExpression(str)
                 }
+                val xc = umlFactory.createConstraint()
                 val xp = umlFactory.createOpaqueExpression()
                 xp.getBodies.add(str)
                 xp.getLanguages.add("OCL")
+                addPosAnnotation(xp,uc.pos)
+                xc.setSpecification(xp)
                 n.fold {
                   val hashName = constr.toString.hashCode
-                  xp.setName(tpe.toString + "_" + hashName)
-                  addPosAnnotation(xp, uc.pos)
+                  xc.setName(tpe.toString + "_" + hashName)
                 } { n =>
-                  xp.setName(n.name)
-                  addPosAnnotation(xp,n.pos)
+                  xc.setName(n.name)
+                  addPosAnnotation(xc,n.pos)
                 }
-                p.setIsDerived(true)
-                p.setDefaultValue(xp)
+                op.setIsDerived(true)
+                xc.getConstrainedElements.add(op)
+                op.getClass_.getOwnedRules.add(xc)
               } catch {
                 case e: ParserException =>
                   error(uc.pos, e.getMessage)
@@ -672,6 +683,10 @@ class Synthesis(name: String)(implicit library: ResourceSet) {
     case Trigger.Timeout(_) =>
     case other =>
       error(elem.pos, s"could not synthesize $other")
+  }
+
+  def project(project: Project): Unit = {
+    
   }
 
   val rel = umlFactory.createRealization()

@@ -23,6 +23,10 @@ sealed abstract class DiagramKind(abbrev: String) {
 
 case class Comment(content: String) extends Element
 
+case class Mapping(supplier: Name, client: UnprocessedConstraint, subMappings: Seq[Mapping])
+
+case class Project(name: String, includes: Seq[String], mappings: Seq[Mapping])
+
 object DiagramKind {
   case object ActivityDiagram extends DiagramKind("act")
   case object BlockDefinitionDiagram extends DiagramKind("bdd")
@@ -191,7 +195,9 @@ object ShortConstraint {
   case class Subsets(expr: String) extends ShortConstraint
 }
 
-object Model {
+case class Requirement(name: String, text: String) extends NamedElement with DiagramContent[DiagramKind.RequirementDiagram.type]
+
+/*object Model {
   def load(uri: URI, name: String, target: Resource = new ResourceImpl)(implicit rs: ResourceSet): Resource = {
     require(uri.isAbsolute, "URI is not absolute")
     val source = Source.fromURI(uri)
@@ -211,4 +217,4 @@ object Model {
         sys.error(msg)
     }
   }
-}
+}*/

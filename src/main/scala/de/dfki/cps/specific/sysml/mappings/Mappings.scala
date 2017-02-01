@@ -1,4 +1,4 @@
-package de.dfki.cps.specific.sysml.mappings
+/*package de.dfki.cps.specific.sysml.mappings
 
 import java.io.File
 import java.net.URI
@@ -73,4 +73,4 @@ object MappingsTest extends App {
   Synthesis.prepareLibrary(rs)
   val ms = Mappings.load(URI.create("./example.mapping"))
   println(ms)
-}
+}*/

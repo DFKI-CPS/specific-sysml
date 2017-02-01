@@ -1,7 +1,9 @@
 package de.dfki.cps.specific.sysml
 
+import java.io.File
 import java.util
 
+import de.dfki.cps.specific.SysML
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.resource.impl.{ExtensibleURIConverterImpl, ResourceSetImpl}
 import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
@@ -16,21 +18,13 @@ import scala.collection.JavaConverters._
 object Test extends App {
   implicit val rs = new ResourceSetImpl
   Synthesis.prepareLibrary(rs)
-
-  val source = Source.fromFile("example.sysml")
-  var tokens: Reader[SysMLLexer.Token] = new IndentScanner(new SysMLLexer.Scanner(source.mkString))
-
-  SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
-    case SysMLParsers.Success(b: Diagram,_) =>
-      val res = rs.createResource(URI.createFileURI("example.ecore"))
-      val synth = new Synthesis("example")
-      synth.structure(b)
-      synth.naming(b)
-      synth.parseConstraints(b)
-      res.getContents.addAll(synth.temp.getContents)
-      res.save(new util.HashMap)
-    case SysMLParsers.NoSuccess(msg,i) =>
-      println(s"$msg [${i.pos}]:\n${i.pos.longString}")
+  val resources = Seq(
+    "index"
+  )
+  resources.foreach { name =>
+    val uri = URI.createFileURI(s"example/$name.sysml")
+    val resource = rs.createResource(uri.appendFileExtension("uml"))
+    val positions = SysML.load(new File(uri.toFileString),resource)
+    resource.save(new util.HashMap)
   }
-
 }
