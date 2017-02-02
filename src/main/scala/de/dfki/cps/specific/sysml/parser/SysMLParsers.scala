@@ -50,8 +50,17 @@ object SysMLParsers extends OclParsers {
     }
   }
 
-  def realization: Parser[Mapping] = (pathName[NamedElement] <~ (REALIZATION ~ MINUS.*)) ~ captureConstraint(ConstraintType.Query,None,allExcept(INDENT,SEPARATOR,DEDENT,EOF).*) ~ opt(indented(realization,"sub realization")) ^^ {
-    case n~c~ss => Mapping(n,c,ss.getOrElse(Nil))
+  def realization: Parser[Mapping] = (name <~ (REALIZATION ~ MINUS.*)) ~ captureConstraint(ConstraintType.Query,None,allExcept(INDENT,SEPARATOR,DEDENT,EOF).*) ~ opt(indented(realization,"sub realization")) ^^ {
+    case n~c~ss => Mapping(n.name,c,ss.getOrElse(Nil)) at n
+  }
+
+  def traceElements: Parser[Seq[Name]] = (
+    LEFT_ARROW ~> pathName[NamedElement] ^^ { case x => Seq(x) }
+  | indented(LEFT_ARROW ~> pathName, "satisfying element")
+  )
+
+  def satisfy: Parser[Satisfy] = ("satisfy" ~! pathName[NamedElement] ~ traceElements) ^^ {
+    case _ ~ n ~ elems => Satisfy(n,elems)
   }
 
   def include: Parser[Seq[String]] =
@@ -68,8 +77,8 @@ object SysMLParsers extends OclParsers {
 
   def project: Parser[Project] =
     "project" ~! enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ~
-       separated(include | realization) ^^ {
-      case _ ~ name ~ elems => Project(name.mkString(" "),(elems collect every[Seq[String]]).flatten,elems collect every[Mapping])
+       separated(include | realization | satisfy) ^^ {
+      case _ ~ name ~ elems => Project(name.mkString(" "),(elems collect every[Seq[String]]).flatten,elems collect every[Mapping],elems collect every[Satisfy])
     }
 
 

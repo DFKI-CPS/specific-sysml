@@ -20,7 +20,7 @@ block Person
     --   p is in a room where q originates from
     --   p is authorised to go to the room q leads to
     --   p is currently not in any door (dap)
-    admitted(q: Door): Boolean
+    admitted(q: Door): Boolean { query }
       post P17: q.org = sit and
                 aut->includes(q.dest) and
                 dap_dom->isEmpty()

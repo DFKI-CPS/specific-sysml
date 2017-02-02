@@ -12,7 +12,7 @@ block Building
 
 block Person
   operations
-    admitted(q: Door): Boolean
+    admitted(q: Door): Boolean { query }
       post P17: q.org = self.sit and
                 self.aut->includes(q.dest) and
                 self.dap_dom->isEmpty()
@@ -33,7 +33,7 @@ block Door
   operations
     accept()
       pre: not (green or red)
-          pre: dap.admitted(self)
+      pre: dap.admitted(self)
       post: dap.dap_dom = self
     refuse()
       pre: not (green or red)

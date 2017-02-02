@@ -12,7 +12,7 @@ block Building
 
 block Person
   operations
-    admitted(q: Door): Boolean
+    admitted(q: Door): Boolean { query }
       post: q.org = self.sit and
         self.aut->includes(q.dest) and
         self.dap_dom->isEmpty()

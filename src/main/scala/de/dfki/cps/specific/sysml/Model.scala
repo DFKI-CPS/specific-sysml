@@ -1,18 +1,8 @@
 package de.dfki.cps.specific.sysml
 
-import java.net.URI
-
 import de.dfki.cps.specific.sysml.Types.Classifier
-import org.eclipse.emf.ecore.EObject
-import org.eclipse.emf.ecore.resource.{Resource, ResourceSet}
-import org.eclipse.emf.ecore.resource.impl.ResourceImpl
-import org.eclipse.uml2.uml.Model
-import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
-
-import scala.collection.mutable
 import scala.concurrent.duration.Duration
-import scala.io.Source
-import scala.util.parsing.input.{Positional, Reader}
+import scala.util.parsing.input.{Positional}
 
 
 
@@ -23,9 +13,11 @@ sealed abstract class DiagramKind(abbrev: String) {
 
 case class Comment(content: String) extends Element
 
-case class Mapping(supplier: Name, client: UnprocessedConstraint, subMappings: Seq[Mapping])
+case class Mapping(supplier: String, client: UnprocessedConstraint, subMappings: Seq[Mapping]) extends Element
 
-case class Project(name: String, includes: Seq[String], mappings: Seq[Mapping])
+case class Satisfy(requirement: Name, elements: Seq[Name]) extends Element
+
+case class Project(name: String, includes: Seq[String], mappings: Seq[Mapping], satisfy: Seq[Satisfy]) extends NamedElement
 
 object DiagramKind {
   case object ActivityDiagram extends DiagramKind("act")
@@ -196,25 +188,3 @@ object ShortConstraint {
 }
 
 case class Requirement(name: String, text: String) extends NamedElement with DiagramContent[DiagramKind.RequirementDiagram.type]
-
-/*object Model {
-  def load(uri: URI, name: String, target: Resource = new ResourceImpl)(implicit rs: ResourceSet): Resource = {
-    require(uri.isAbsolute, "URI is not absolute")
-    val source = Source.fromURI(uri)
-    var tokens: Reader[SysMLLexer.Token] = new IndentScanner(new SysMLLexer.Scanner(source.mkString))
-    SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
-      case SysMLParsers.Success(b: Diagram, _) =>
-        val synth = new Synthesis(name)
-        println(s"synthesizing $uri")
-        synth.structure(b)
-        synth.naming(b)
-        synth.parseConstraints(b)
-        println(s"[success] synthesized $uri")
-        target.getContents.addAll(synth.temp.getContents)
-        target
-      case SysMLParsers.NoSuccess(msg, i) =>
-        println(s"$msg [${i.pos}]:\n${i.pos.longString}")
-        sys.error(msg)
-    }
-  }
-}*/

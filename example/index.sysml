@@ -11,5 +11,12 @@ include
   08-fsl6.sysml
 
 fsl0 <|- fsl1
-  foo <|- boo
-  bar <|- doo
+fsl1 <|- fsl2
+fsl2 <|- fsl3
+fsl3 <|- fsl4
+fsl4 <|- fsl5
+fsl5 <|- fsl6
+
+satisfy isl::acs::P1
+  <- fsl0::acs::Building
+  <- fsl0::acs::Person
