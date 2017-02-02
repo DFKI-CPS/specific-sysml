@@ -49,6 +49,8 @@ object Synthesis {
 }
 
 class Synthesis(resource: Resource) {
+  var includeOCL = false
+  var includeProfileApplications = true
   private def hashString(s: String) =
     java.lang.Long.toString(s.hashCode.toLong + Int.MaxValue,16)
 
@@ -73,7 +75,6 @@ class Synthesis(resource: Resource) {
   private val appliedProfiles = Set("SysML","Blocks","PortAndFlows","Requirements")
 
   val primitives = library.getEObject(URI.createURI("pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"),true).asInstanceOf[uml.Model]
-  val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"),true)
 
   def addPosAnnotation(elem: EObject, pos: Position) = if (pos != NoPosition) {
     /*val annon = ecoreFactory.createEAnnotation()
@@ -93,12 +94,14 @@ class Synthesis(resource: Resource) {
   val models = mutable.Map.empty[String,Model]
 
   // PROFILE APPLICATIONS
+  lazy val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"), true)
+
   def getOrCreateModel(name: String): Model = models.getOrElseUpdate(name, {
     val model = umlFactory.createModel()
     model.setName(name)
     val primitivesImport = model.createPackageImport(primitives)
     resource.getContents.add(model)
-    profs.getAllContents.asScala.foreach {
+    if (includeProfileApplications) profs.getAllContents.asScala.foreach {
       case x: Profile if appliedProfiles contains (x.getName) =>
         val pappl = model.createProfileApplication()
         pappl.createEAnnotation("http://www.eclipse.org/uml2/2.0.0/UML").getReferences.add(x.getDefinition)
@@ -549,8 +552,10 @@ class Synthesis(resource: Resource) {
   //////////////////////////////////////////////////////////////////////////////
 
   lazy val ocl = {
-    val ocl = OCL.newInstance(new UMLEnvironmentFactory(library))
-    ocl
+    if (includeOCL)
+      OCL.newInstance(new UMLEnvironmentFactory(library),resource)
+    else
+      OCL.newInstance(new UMLEnvironmentFactory(library))
   }
 
   def parseConstraints(elem: Element): Unit = elem match {
@@ -567,19 +572,25 @@ class Synthesis(resource: Resource) {
                 val helper = ocl.createOCLHelper()
                 helper.setContext(c)
                 val constr = helper.createInvariant(str)
-                val xc = umlFactory.createConstraint()
-                val xp = umlFactory.createOpaqueExpression()
-                addPosAnnotation(xp,uc.pos)
-                xp.getBodies.add(str)
-                xp.getLanguages.add("OCL")
-                xc.setSpecification(xp)
-                xc.getConstrainedElements.add(c)
-                n.fold {
-                  val hashName = hashString(constr.toString)
-                  xc.setName(tpe.toString + "_" + hashName)
-                } { n =>
-                  xc.setName(n.name)
-                  addPosAnnotation(xc,n.pos)
+                val xc = if (this.includeOCL) {
+                  addPosAnnotation(constr,uc.pos)
+                  constr
+                } else {
+                  val xc = umlFactory.createConstraint()
+                  val xp = umlFactory.createOpaqueExpression()
+                  addPosAnnotation(xp, uc.pos)
+                  xp.getBodies.add(str)
+                  xp.getLanguages.add("OCL")
+                  xc.setSpecification(xp)
+                  xc.getConstrainedElements.add(c)
+                  n.fold {
+                    val hashName = hashString(str)
+                    xc.setName(tpe.toString + "_" + hashName)
+                  } { n =>
+                    xc.setName(n.name)
+                    addPosAnnotation(xc, n.pos)
+                  }
+                  xc
                 }
                 c.getOwnedRules.add(xc)
               } catch {
@@ -606,20 +617,26 @@ class Synthesis(resource: Resource) {
                   case ConstraintType.Post =>
                     oclHelper.createPostcondition(str)
                 }
-                val xc = umlFactory.createConstraint()
-                val xp = umlFactory.createOpaqueExpression()
-                xp.getBodies.add(str)
-                xp.getLanguages.add("OCL")
-                addPosAnnotation(xp,uc.pos)
-                xc.setSpecification(xp)
-                n.fold {
-                  val hashName = hashString(constr.toString)
-                  xc.setName(tpe.toString + "_" + hashName)
-                } { n =>
-                  xc.setName(n.name)
-                  addPosAnnotation(xc,n.pos)
+                val xc = if (this.includeOCL) {
+                  addPosAnnotation(constr,uc.pos)
+                  constr
+                } else {
+                  val xc = umlFactory.createConstraint()
+                  val xp = umlFactory.createOpaqueExpression()
+                  xp.getBodies.add(str)
+                  xp.getLanguages.add("OCL")
+                  addPosAnnotation(xp, uc.pos)
+                  xc.setSpecification(xp)
+                  n.fold {
+                    val hashName = hashString(str)
+                    xc.setName(tpe.toString + "_" + hashName)
+                  } { n =>
+                    xc.setName(n.name)
+                    addPosAnnotation(xc, n.pos)
+                  }
+                  xc.getConstrainedElements.add(op)
+                  xc
                 }
-                xc.getConstrainedElements.add(op)
                 tpe match {
                   case ConstraintType.Post =>
                     op.getPostconditions.add(xc)
@@ -648,21 +665,27 @@ class Synthesis(resource: Resource) {
                   case ConstraintType.Derive =>
                     oclHelper.createDerivedValueExpression(str)
                 }
-                val xc = umlFactory.createConstraint()
-                val xp = umlFactory.createOpaqueExpression()
-                xp.getBodies.add(str)
-                xp.getLanguages.add("OCL")
-                addPosAnnotation(xp,uc.pos)
-                xc.setSpecification(xp)
-                n.fold {
-                  val hashName = hashString(constr.toString)
-                  xc.setName(tpe.toString + "_" + hashName)
-                } { n =>
-                  xc.setName(n.name)
-                  addPosAnnotation(xc,n.pos)
+                val xc = if (this.includeOCL) {
+                  addPosAnnotation(constr,uc.pos)
+                  constr
+                } else {
+                  val xc = umlFactory.createConstraint()
+                  val xp = umlFactory.createOpaqueExpression()
+                  xp.getBodies.add(str)
+                  xp.getLanguages.add("OCL")
+                  addPosAnnotation(xp, uc.pos)
+                  xc.setSpecification(xp)
+                  n.fold {
+                    val hashName = hashString(str)
+                    xc.setName(tpe.toString + "_" + hashName)
+                  } { n =>
+                    xc.setName(n.name)
+                    addPosAnnotation(xc, n.pos)
+                  }
+                  xc.getConstrainedElements.add(op)
+                  xc
                 }
                 op.setIsDerived(true)
-                xc.getConstrainedElements.add(op)
                 op.getClass_.getOwnedRules.add(xc)
               } catch {
                 case e: ParserException =>

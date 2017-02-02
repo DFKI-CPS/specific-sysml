@@ -23,13 +23,15 @@ import scala.util.parsing.input.{Position, Reader}
   * @author Martin Ring <martin.ring@dfki.de>
   */
 object SysML {
-  def load(source: File, target: Resource): Map[EObject, Position] = {
+  def load(source: File, target: Resource, includeOCL: Boolean = false, includeProfileApplcations: Boolean = true): Map[EObject, Position] = {
     val textSource = Source.fromFile(source)
     val tokens = new IndentScanner(new SysMLLexer.Scanner(textSource.mkString))
 
     SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
       case SysMLParsers.Success(b: Diagram,_) =>
         val synth = new Synthesis(target)
+        synth.includeOCL = includeOCL
+        synth.includeProfileApplications = includeProfileApplcations
         synth.structure(b)
         synth.naming(b)
         synth.parseConstraints(b)
