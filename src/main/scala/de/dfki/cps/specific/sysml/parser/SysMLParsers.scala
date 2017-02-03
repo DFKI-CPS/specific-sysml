@@ -116,13 +116,13 @@ object SysMLParsers extends OclParsers {
     "constraints" ~> indented(constraint(ConstraintType.Inv), "constraint") ^^ ConstraintsCompartment
 
   def stateMachine: Parser[StateMachine] =
-    ("state" ~ "machine") ~> name ~ indented(state, "state") ^^ { case n~ss => StateMachine(n.name,ss).at(n) }
+    ("state" ~ "machine") ~> name ~ opt(REALIZATION ~> name) ~ indented(state, "state") ^^ { case n~r~ss => StateMachine(n.name,ss,r.map(_.name)).at(n) }
 
   def state: Parser[State] =
     ( ("initial".? <~ "state") ~ name ~ indented(transition, "transition") ^^ { case i~n~ts => ConcreteState(n.name,ts,i.isDefined).at(n) }
     | positioned("choose" ~> indented(transition, "transition") ^^ Choice) )
 
-  def transition: Parser[Transition] = positioned(opt(trigger) ~ opt(guard) ~ opt(action) ~ (RIGHT_ARROW ~>  transitionTarget) ^^ { case t~g~a~s => Transition(t,g,a,s) })
+  def transition: Parser[Transition] = positioned(opt(trigger) ~ opt(guard) ~ (SLASH ~> opt(action)) ~ (RIGHT_ARROW ~>  transitionTarget) ^^ { case t~g~a~s => Transition(t,g,a,s) })
 
   //def shortConstraint
 
@@ -134,11 +134,13 @@ object SysMLParsers extends OclParsers {
     LEFT_SQUARE_BRACKET ~> constraintContent(ConstraintType.Query, None, RIGHT_SQUARE_BRACKET) <~ RIGHT_SQUARE_BRACKET
 
   def action: Parser[UnprocessedConstraint] =
-    SLASH ~> constraintContent(ConstraintType.Query, None, RIGHT_ARROW)
+    constraintContent(ConstraintType.Query, None, RIGHT_ARROW)
 
   def trigger: Parser[Trigger] =
-  positioned("after" ~> duration ^^ Trigger.Timeout
-  | "receive" ~> name ~ opt(LEFT_PARENS ~> (name <~ RIGHT_PARENS)) ^^ { case p~v => Trigger.Receive(p.name,v.map(_.name)).at(p) } )
+  positioned(
+    "after" ~> duration ^^ Trigger.Timeout
+  | "receive" ~> name ~ opt(LEFT_PARENS ~> (name <~ RIGHT_PARENS)) ^^ { case p~v => Trigger.Receive(p.name,v.map(_.name)).at(p) }
+  | name ^^ { case x => Trigger.Call(x.name) at x } )
 
   def duration: Parser[TimeEvent] = positioned{
     integer ~ timeUnit ^^ { case i ~ n => TimeEvent(Duration(i.toLong,n).toCoarsest) }

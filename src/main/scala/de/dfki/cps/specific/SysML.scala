@@ -11,7 +11,7 @@ import org.eclipse.emf.ecore.util.EcoreUtil
 import org.eclipse.ocl.{Environment, OCL}
 import org.eclipse.ocl.expressions.ExpressionsFactory
 import org.eclipse.ocl.uml.UMLFactory.{eINSTANCE => oclFactory}
-import org.eclipse.ocl.uml.{UMLEnvironmentFactory, Variable}
+import org.eclipse.ocl.uml.{OCLExpression, UMLEnvironmentFactory, Variable}
 import org.eclipse.papyrus.sysml.requirements.RequirementsFactory
 import org.eclipse.uml2.uml
 import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
@@ -171,6 +171,7 @@ object SysML {
           realization.getClients.add(client)
           target.getContents.add(realization)
           mapping.subMappings.foreach(submapping(supplier.asInstanceOf[uml.Namespace], client.asInstanceOf[uml.Namespace], mapping.subMappings))
+          automap(supplier.asInstanceOf[uml.Namespace],client.asInstanceOf[uml.Namespace])
         }
       } else {
         for {
@@ -199,15 +200,18 @@ object SysML {
           println(clientContext)
           helper.setValidating(false)
           val clientExpr = helper.createQuery(mapping.client.content)
-          val client = clientExpr match {
+          def extractClient(expr: org.eclipse.ocl.expressions.OCLExpression[uml.Classifier]): Option[uml.NamedElement] = expr match {
             case prop: org.eclipse.ocl.uml.PropertyCallExp =>
               Some(prop.getReferredProperty)
             case op: org.eclipse.ocl.uml.OperationCallExp =>
               Some(op.getReferredOperation)
+            case iter: org.eclipse.ocl.uml.IteratorExp =>
+              extractClient(iter.getBody)
             case other =>
-              println("error")
+              println("error: " + other)
               None
           }
+          val client = extractClient(clientExpr)
           for {
             client <- client
           } {
@@ -219,7 +223,7 @@ object SysML {
             val umapping = uml.UMLFactory.eINSTANCE.createOpaqueExpression()
             positions += umapping -> mapping.client.pos
             umapping.getLanguages.add("OCL")
-            umapping.getBodies.add(clientExpr.toString)
+            umapping.getBodies.add(mapping.client.content)
             realization.setMapping(umapping)
             target.getContents.add(realization)
             (supplier, client) match {

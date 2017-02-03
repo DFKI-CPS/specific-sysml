@@ -135,7 +135,7 @@ case class Port(name: String, direction: Option[FlowDirection], typeAnnotation: 
   override def toString = s"<<port>> $direction $name$typeAnnotation"
 }
 
-case class StateMachine(name: String, states: Seq[State]) extends BlockMember with Namespace {
+case class StateMachine(name: String, states: Seq[State], operation: Option[String]) extends BlockMember with Namespace {
   override def toString = s"<<state machine>> $name\n${indent(states.mkString("\n"))}"
   def members: Seq[State] = states
 }
@@ -177,7 +177,7 @@ sealed trait Trigger extends Element
 object Trigger {
   case class Timeout(after: TimeEvent) extends Trigger
   case class Receive(portName: String, boundVariableName: Option[String]) extends Trigger
-  //case class Call(operation)
+  case class Call(operation: String) extends Trigger
 }
 
 sealed trait CallExpr

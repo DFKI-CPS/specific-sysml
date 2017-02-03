@@ -17,6 +17,7 @@ import org.eclipse.uml2.uml.{Model, Profile, PseudostateKind, UMLFactory}
 import Types.PrimitiveType
 import de.dfki.cps.specific.sysml.parser.{ParseError, Severity}
 import org.eclipse.emf.ecore.resource.{Resource, ResourceSet}
+import org.eclipse.emf.ecore.util.EcoreUtil
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl
 import org.eclipse.ocl.uml.UMLEnvironmentFactory
 import org.eclipse.papyrus.sysml.requirements.RequirementsFactory
@@ -278,7 +279,7 @@ class Synthesis(resource: Resource) {
       c.getOwnedPorts.add(b)
       resource.getContents.add(p)
       member.uml = Some(b)
-    case StateMachine(name, states) =>
+    case StateMachine(name, states, op) =>
       val c = owner.getBase_Class
       val stm = umlFactory.createProtocolStateMachine()
       addPosAnnotation(stm,member.pos)
@@ -381,6 +382,8 @@ class Synthesis(resource: Resource) {
   val timeEvents = mutable.Map.empty[Long,uml.TimeEvent]
 
   def structure(ts: uml.ProtocolTransition, trigger: Trigger): Unit = trigger match {
+    case trig@Trigger.Call(opn) =>
+      trig.uml = Some(ts.createTrigger(s"T_Call_$opn"))
     case trig@Trigger.Receive(port,v) =>
       val t = umlFactory.createTrigger()
       trig.uml = Some(t)
@@ -416,6 +419,13 @@ class Synthesis(resource: Resource) {
       pkg
     }
   }
+
+  def getContainingClass(elem: uml.NamedElement): Option[uml.Class] =
+    Option(elem.getNamespace).flatMap {
+      case cls: uml.Class =>
+        Some(cls)
+      case other => getContainingClass(other)
+    }
 
   //////////////////////////////////////////////////////////////////////////////
   /// NAME RESOLUTION  /////////////////////////////////////////////////////////
@@ -453,44 +463,44 @@ class Synthesis(resource: Resource) {
     case Diagram(_, "package", meName, name, content) =>
       content.foreach(naming)
       elem.uml.collect {
-        case pkg: uml.Package => validate.validatePackage(pkg,chain,context)
+        case pkg: uml.Package => validate.validatePackage(pkg, chain, context)
       }
     case r: Requirement => // nothing to do
     case b: Block =>
       b.members.foreach(naming)
       elem.uml.collect {
         case blk: sysml.blocks.Block =>
-          validate.validateClass(blk.getBase_Class,chain,context)
+          validate.validateClass(blk.getBase_Class, chain, context)
       }
-    case Operation(name,tpe,params,props,constraints) =>
+    case Operation(name, tpe, params, props, constraints) =>
       if (tpe.name != ResolvedName(Types.Unit)) elem.uml.collect {
         case op: uml.Operation =>
-          resolveTypeName(op.getClass_,elem.file,tpe.name).fold[Unit] {
-            error(elem.file,tpe.name.pos, s"unknown type $tpe")
+          resolveTypeName(op.getClass_, elem.file, tpe.name).fold[Unit] {
+            error(elem.file, tpe.name.pos, s"unknown type $tpe")
           } { t =>
             op.setType(t)
-            addPosAnnotation(op.getReturnResult,tpe.pos)
+            addPosAnnotation(op.getReturnResult, tpe.pos)
           }
       }
       params.map(naming)
       elem.uml.collect {
         case op: uml.Operation =>
-          validate.validateOperation(op,chain,context)
+          validate.validateOperation(op, chain, context)
       }
-    case Parameter(name,tpe,props) =>
+    case Parameter(name, tpe, props) =>
       elem.uml.collect {
         case op: uml.Parameter =>
-          resolveTypeName(op.getOperation.getClass_,elem.file,tpe.name)
+          resolveTypeName(op.getOperation.getClass_, elem.file, tpe.name)
             .foreach(op.setType)
       }
-    case Reference(name,tpe,isComposite,opposite,props,constraint) =>
+    case Reference(name, tpe, isComposite, opposite, props, constraint) =>
       elem.uml.collect {
         case op: uml.Property =>
-          resolveTypeName(op.getClass_,elem.file,tpe.name).foreach{ tpe =>
+          resolveTypeName(op.getClass_, elem.file, tpe.name).foreach { tpe =>
             op.setType(tpe)
 
             val opp = (opposite, tpe) match {
-              case (Some(o),tpe: uml.Classifier) =>
+              case (Some(o), tpe: uml.Classifier) =>
                 tpe.getAttributes.asScala.find { p =>
                   p.getName == o
                 }
@@ -509,40 +519,75 @@ class Synthesis(resource: Resource) {
             }
           }
       }
-    case Property(name,tpe,props,constraint) =>
+    case Property(name, tpe, props, constraint) =>
       elem.uml.collect {
         case op: uml.Property =>
-          resolveTypeName(op.getClass_,elem.file, tpe.name).foreach { tpe =>
+          resolveTypeName(op.getClass_, elem.file, tpe.name).foreach { tpe =>
             op.setType(tpe)
           }
       }
-    case Port(name,dir,tpe) =>
-    case UnprocessedConstraint(_,_,_) =>
-    case StateMachine(name,states) =>
+    case Port(name, dir, tpe) =>
+    case UnprocessedConstraint(_, _, _) =>
+    case StateMachine(name, states, op) =>
+      op.foreach { op =>
+        elem.uml.collect {
+          case s: uml.ProtocolStateMachine =>
+            val cls = getContainingClass(s)
+            val opn = cls.flatMap(_.getOperations.asScala.find(_.getName == op))
+            opn.fold {
+              error(elem.file, elem.pos, s"operation $op is not a member of the wrapping class")
+            }{ opn =>
+              s.setSpecification(opn)
+            }
+        }
+      }
       states.map(naming)
     case ConcreteState(name,tss,initial) =>
       tss.map(naming)
     case Choice(tss) =>
       tss.map(naming)
-    case Transition(trigger,guard,action,UnresolvedTargetStateName(name)) =>
-      trigger.foreach(naming)
+    case Transition(trigger,guard,action,target) =>
       elem.uml.collect {
-        case t: uml.Transition =>
-          val vertices = t.getContainer.getSubvertices.asScala
-          val target = if (name.parts.length == 1)
-            vertices.find(_.getName == name.parts.head)
-          else
-            None
-          target.fold {
-            error(elem.file, name.pos, s"could not resolve vertex $name")
-          } { t.setTarget }
+        case ts: uml.Transition =>
+          trigger.foreach {
+            case Trigger.Receive(portName, variable) =>
+            case trig@Trigger.Call(op) =>
+              val cls = getContainingClass(ts).flatMap(getContainingClass)
+              val opn = cls.flatMap(_.getOperations.asScala.find(_.getName == op))
+              opn.fold {
+                error(elem.file, elem.pos, s"operation $op is not a member of the wrapping class")
+              } { opn =>
+                trig.uml.collect {
+                  case tg: uml.Trigger =>
+                    val eventName = s"E_Call_$op"
+                    val event = Option(ts.getModel.getPackagedElement(eventName)).map(_.asInstanceOf[uml.Event])
+                        .getOrElse {
+                          val e = umlFactory.createCallEvent()
+                          e.setName(eventName)
+                          e.setOperation(opn)
+                          ts.getModel.getPackagedElements.add(e)
+                          e
+                        }
+                    tg.setEvent(event)
+                }
+              }
+            case Trigger.Timeout(_) => // nothing to do here
+          }
+          target match {
+            case InlineTargetState(st) => naming(st)
+            case UnresolvedTargetStateName(name) =>
+              val vertices = ts.getContainer.getSubvertices.asScala
+              val target = if (name.parts.length == 1)
+                vertices.find(_.getName == name.parts.head)
+              else
+                None
+              target.fold {
+                error(elem.file, name.pos, s"could not resolve vertex $name")
+              } {
+                ts.setTarget
+              }
+          }
       }
-    case Transition(trigger,guard,action,InlineTargetState(st)) =>
-      trigger.foreach(naming)
-      naming(st)
-    case Trigger.Receive(portName, variable) =>
-
-    case Trigger.Timeout(_) => // nothing to do here
     case other =>
       error(elem.file, elem.pos, s"could not synthesize $other")
   }
@@ -694,7 +739,7 @@ class Synthesis(resource: Resource) {
           }
       }
     case Port(name,dir,tpe) =>
-    case StateMachine(name,states) =>
+    case StateMachine(name,states,opn) =>
       states.foreach(parseConstraints)
     case ConcreteState(name,tss,initial) =>
       tss.foreach(parseConstraints)
@@ -707,6 +752,7 @@ class Synthesis(resource: Resource) {
       parseConstraints(st)
     case Trigger.Receive(portName, variable) =>
     case Trigger.Timeout(_) =>
+    case Trigger.Call(_) =>
     case other =>
       error(elem.file, elem.pos, s"could not synthesize $other")
   }

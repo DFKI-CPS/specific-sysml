@@ -13,12 +13,10 @@ block Building
   references
     building: Building[*] <- gate
     gate: Building[*] <- building
-  ports
-    incoming: Person
   owned behaviors
-    state machine EnterBehavior
+    state machine EnterBehavior <|- enter
       initial state Waiting
-        receive incoming(p) / enter(p) -> Waiting
+        enter / -> Waiting
 
 block Person
   references
