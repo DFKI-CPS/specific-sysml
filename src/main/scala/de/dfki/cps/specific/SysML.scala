@@ -8,8 +8,10 @@ import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.emf.ecore.util.EcoreUtil
-import org.eclipse.ocl.OCL
-import org.eclipse.ocl.uml.UMLEnvironmentFactory
+import org.eclipse.ocl.{Environment, OCL}
+import org.eclipse.ocl.expressions.ExpressionsFactory
+import org.eclipse.ocl.uml.UMLFactory.{eINSTANCE => oclFactory}
+import org.eclipse.ocl.uml.{UMLEnvironmentFactory, Variable}
 import org.eclipse.papyrus.sysml.requirements.RequirementsFactory
 import org.eclipse.uml2.uml
 import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
@@ -108,7 +110,7 @@ object SysML {
 
     val ocl = OCL.newInstance(new UMLEnvironmentFactory(target.getResourceSet))
 
-    val mapped = mutable.HashSet.empty[EObject]
+    val mapped = mutable.HashMap.empty[EObject,EObject]
 
     def automap(supplyingContext: uml.Namespace, clientContext: uml.Namespace):Unit = {
       supplyingContext.getOwnedMembers.asScala.foreach {
@@ -116,7 +118,7 @@ object SysML {
           val client = clientContext.getOwnedMembers.asScala.find(_.getName == supplier.getName)
           client.foreach {
             case client: uml.NamedElement =>
-              mapped += supplier
+              mapped += supplier -> client
               val realization = uml.UMLFactory.eINSTANCE.createRealization()
               realization.getSuppliers.add(supplier)
               realization.getClients.add(client)
@@ -131,7 +133,22 @@ object SysML {
       }
     }
 
-    def submapping(supplyingContext: uml.Namespace, clientContext: uml.Namespace)(mapping: Mapping): Unit = {
+    type UMLEnvrionment = Environment[
+      uml.Package,
+      uml.Classifier,
+      uml.Operation,
+      uml.Property,
+      uml.EnumerationLiteral,
+      uml.Parameter,
+      uml.State,
+      uml.CallOperationAction,
+      uml.SendSignalAction,
+      uml.Constraint,
+      uml.Class,
+      uml.Element
+    ]
+
+    def submapping(supplyingContext: uml.Namespace, clientContext: uml.Namespace, otherMappings: Seq[Mapping])(mapping: Mapping): Unit = {
       val supplier = supplyingContext.getMembers.asScala.find(_.getName == mapping.supplier)
       if (supplier.isEmpty) {
         println(s"error: ${mapping.pos} element '${mapping.supplier}' is not a member of ${supplyingContext.getName}")
@@ -147,50 +164,69 @@ object SysML {
           supplier <- supplier
           client <- client
         } {
-          mapped += supplier
+          mapped += supplier -> client
           val realization = uml.UMLFactory.eINSTANCE.createRealization()
           positions += realization -> mapping.pos
           realization.getSuppliers.add(supplier)
           realization.getClients.add(client)
           target.getContents.add(realization)
-          mapping.subMappings.foreach(submapping(supplier.asInstanceOf[uml.Namespace], client.asInstanceOf[uml.Namespace]))
+          mapping.subMappings.foreach(submapping(supplier.asInstanceOf[uml.Namespace], client.asInstanceOf[uml.Namespace], mapping.subMappings))
         }
       } else {
-        val helper = ocl.createOCLHelper()
-        clientContext match {
-          case op: uml.Operation => helper.setOperationContext(op.getClass_,op)
-          case cls: uml.Classifier => helper.setContext(cls)
-          case prop: uml.Property => helper.setAttributeContext(prop.getClass_,prop)
-        }
-        val clientExpr = helper.createQuery(mapping.client.content)
-        val client = clientExpr match {
-          case prop: org.eclipse.ocl.uml.PropertyCallExp =>
-            Some(prop.getReferredProperty)
-          case op: org.eclipse.ocl.uml.OperationCallExp =>
-            Some(op.getReferredOperation)
-          case other =>
-            println("error")
-            None
-        }
         for {
           supplier <- supplier
-          client <- client
         } {
-          mapped += supplier
-          val realization = uml.UMLFactory.eINSTANCE.createRealization()
-          positions += realization -> mapping.pos
-          realization.getSuppliers.add(supplier)
-          realization.getClients.add(client)
-          val umapping = uml.UMLFactory.eINSTANCE.createOpaqueExpression()
-          positions += umapping -> mapping.client.pos
-          umapping.getLanguages.add("OCL")
-          umapping.getBodies.add(clientExpr.toString)
-          realization.setMapping(umapping)
-          target.getContents.add(realization)
-          (supplier,client) match {
-            case (supplier: uml.Namespace,client: uml.Namespace) =>
-              mapping.subMappings.foreach(submapping(supplier, client))
-            case other => assert(mapping.subMappings.isEmpty)
+          val helper = ocl.createOCLHelper()
+          supplyingContext match {
+            case cls: uml.Classifier =>
+              val mappedCls = mapped(cls).asInstanceOf[uml.Classifier]
+              helper.setContext(mappedCls)
+              val variables = supplier match {
+                case op: uml.Operation =>
+                  op.getOwnedParameters.asScala.map { param =>
+                    val v = ExpressionsFactory.eINSTANCE.createVariable[uml.Classifier,uml.Parameter]()
+                    v.setName(param.getName)
+                    v.setType(mapped(param.getType).asInstanceOf[uml.Classifier])
+                    v
+                  }
+                case prop: uml.Property =>
+                  Nil
+              }
+              variables.foreach { v =>
+                helper.getEnvironment.asInstanceOf[UMLEnvrionment].addElement(v.getName,v,true)
+              }
+          }
+          println(clientContext)
+          helper.setValidating(false)
+          val clientExpr = helper.createQuery(mapping.client.content)
+          val client = clientExpr match {
+            case prop: org.eclipse.ocl.uml.PropertyCallExp =>
+              Some(prop.getReferredProperty)
+            case op: org.eclipse.ocl.uml.OperationCallExp =>
+              Some(op.getReferredOperation)
+            case other =>
+              println("error")
+              None
+          }
+          for {
+            client <- client
+          } {
+            mapped += supplier -> client
+            val realization = uml.UMLFactory.eINSTANCE.createRealization()
+            positions += realization -> mapping.pos
+            realization.getSuppliers.add(supplier)
+            realization.getClients.add(client)
+            val umapping = uml.UMLFactory.eINSTANCE.createOpaqueExpression()
+            positions += umapping -> mapping.client.pos
+            umapping.getLanguages.add("OCL")
+            umapping.getBodies.add(clientExpr.toString)
+            realization.setMapping(umapping)
+            target.getContents.add(realization)
+            (supplier, client) match {
+              case (supplier: uml.Namespace, client: uml.Namespace) =>
+                mapping.subMappings.foreach(submapping(supplier, client, mapping.subMappings))
+              case other => assert(mapping.subMappings.isEmpty)
+            }
           }
         }
       }
@@ -214,12 +250,12 @@ object SysML {
         supplier <- model
         client <- clientModel
       } {
-        mapped += supplier
+        mapped += supplier -> client
         val realization = uml.UMLFactory.eINSTANCE.createRealization()
         realization.getSuppliers.add(supplier)
         realization.getClients.add(client)
         target.getContents.add(realization)
-        mapping.subMappings.foreach(submapping(supplier,client))
+        mapping.subMappings.foreach(submapping(supplier,client,mapping.subMappings))
         automap(supplier,client)
       }
     }
