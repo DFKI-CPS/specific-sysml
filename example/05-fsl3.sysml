@@ -26,9 +26,7 @@ block Door
   references
     org:  Building[1] <- org_dom
     dest: Building[1]
-  ports
-    incoming: Person
   owned behaviors
-    state machine EnterBehavior
+    state machine EnterBehavior <|- enter
       initial state Waiting
-        receive incoming(p) / enter(p) -> Waiting
+        enter / -> Waiting

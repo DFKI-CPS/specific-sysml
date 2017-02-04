@@ -13,12 +13,10 @@ include
 fsl0 <|- fsl1
 fsl1 <|- fsl2
   acs <|- acs
-    Building <|- Building
     Person <|- Person
       pass <|- b.enter(self)
 fsl2 <|- fsl3
   acs <|- acs
-    Person <|- Person
     Building <|- Building
       enter <|- org_dom->select(d|d.org = p.sit).enter(p)
 fsl3 <|- fsl4

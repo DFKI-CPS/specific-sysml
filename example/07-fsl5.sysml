@@ -66,7 +66,7 @@ block Door
     incoming: Person
     passing: Person
   owned behaviors
-    state machine DoorBehavior
+    state machine EnterBehavior
       initial state Waiting
         receive incoming(p) / accept(p) -> Accepting
         receive incoming(p) / refuse(p) -> Refusing
