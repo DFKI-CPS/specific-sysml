@@ -38,6 +38,30 @@ satisfy isl::acs::P6
   <- fsl1::acs::Building::building
 satisfy isl::acs::P7
   <- fsl1::acs::Building::P7
+satisfy isl::acs::P8
+  <- fsl1::acs::Person::pass::P8
+satisfy isl::acs::P9
+  <- isl::acs::P10
 satisfy isl::acs::P10
   <- fsl1::acs::Person::P10
 
+satisfy isl::acs::P11
+  <- fsl4::acs::Door
+satisfy isl::acs::P12
+  <- fsl4::acs::Door::dap
+  <- fsl4::acs::Person::dap_dom
+  <- fsl4::acs::Person::P12
+satisfy isl::acs::P13
+  <- fsl4::acs::Door::accept
+  <- fsl4::acs::Person::P13a
+  <- fsl4::acs::Person::P13b
+satisfy isl::acs::P14
+  <- fsl4::acs::Door::green
+  <- fsl4::acs::Door::pass_thru
+  <- fsl4::acs::Door::off_grn
+satisfy isl::acs::P15
+  <- fsl5::acs::Door::off_red
+satisfy isl::acs::P16
+  <- fsl4::acs::Door::P16
+satisfy isl::acs::P17
+  <- fsl4::acs::Person::admitted

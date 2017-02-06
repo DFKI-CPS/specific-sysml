@@ -72,3 +72,5 @@ block Door
         pass_thru / -> Waiting
       state Refusing
         off_red / -> Waiting
+  constraints
+    inv P16: red <> green

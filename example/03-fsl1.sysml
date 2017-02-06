@@ -19,7 +19,7 @@ block Person
       -- P8: A person can only go from one building in
       -- which he is to another where he desires to go if
       -- these two buildings communicate with each other.
-      pre: sit.gate->includes(b)
+      pre P8: sit.gate->includes(b)
       post: sit = b
   references
     aut: Building[*]
