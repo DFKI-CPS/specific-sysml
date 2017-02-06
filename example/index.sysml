@@ -12,26 +12,44 @@ include
   08-fsl6.sysml
 
 fsl0 <|- fsl1
+  acs <|- acs
+    Person <|- Person
+      authorized <|- aut
+      current <|- sit
+
 fsl1 <|- fsl2
   acs <|- acs
     Person <|- Person
       pass <|- b.enter(self)
+        self <|- p
+        b <|- self
+
 fsl2 <|- fsl3
   acs <|- acs
     Building <|- Building
       enter <|- org_dom->select(d|d.org = p.sit).enter(p)
+        self <|- org
+
 fsl3 <|- fsl4
+
 fsl4 <|- fsl5
+
 fsl5 <|- fsl6
+  acs <|- acs
+    Door <|- Door
+      accept <|- accept()
+        p <|- self.dap
+      refuse <|- refuse()
+        p <|- self.dap
 
 satisfy isl::acs::P1
   <- fsl0::acs::Building
   <- fsl0::acs::Person
 satisfy isl::acs::P2
-  <- fsl0::acs::Person::aut
-satisfy isl::acs::P3 <- fsl0::acs::Person::sit
-satisfy isl::acs::P4 <- fsl0::acs::Person::sit
-satisfy isl::acs::P5 <- fsl0::acs::Person::sit
+  <- fsl0::acs::Person::authorized
+satisfy isl::acs::P3 <- fsl0::acs::Person::current
+satisfy isl::acs::P4 <- fsl0::acs::Person::current
+satisfy isl::acs::P5 <- fsl0::acs::Person::current
 
 satisfy isl::acs::P6
   <- fsl1::acs::Building::gate
