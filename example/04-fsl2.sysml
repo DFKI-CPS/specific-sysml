@@ -1,9 +1,6 @@
 bdd [package] fsl2::acs [ACS]
 -----------------------------------------------------------
 
--- P6: The geometry of buildings serves to define which
--- buildings can communicate between each other, and in
--- which direction.
 block Building
   operations
     enter(p: Person)

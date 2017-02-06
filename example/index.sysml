@@ -1,4 +1,5 @@
-project [acs]
+project [ACS]
+-----------------------------------------------------------
 
 include
   01-isl.sysml
@@ -26,3 +27,17 @@ fsl5 <|- fsl6
 satisfy isl::acs::P1
   <- fsl0::acs::Building
   <- fsl0::acs::Person
+satisfy isl::acs::P2
+  <- fsl0::acs::Person::aut
+satisfy isl::acs::P3 <- fsl0::acs::Person::sit
+satisfy isl::acs::P4 <- fsl0::acs::Person::sit
+satisfy isl::acs::P5 <- fsl0::acs::Person::sit
+
+satisfy isl::acs::P6
+  <- fsl1::acs::Building::gate
+  <- fsl1::acs::Building::building
+satisfy isl::acs::P7
+  <- fsl1::acs::Building::P7
+satisfy isl::acs::P10
+  <- fsl1::acs::Person::P10
+

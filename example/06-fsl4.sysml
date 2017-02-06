@@ -80,13 +80,10 @@ block Door
     dest: Building[1]
     -- P12: [...]A door can only be accepted for one person at a time.
     dap:  Person[0..1] <- dap_dom
-  ports
-    incoming: Person
-    passing: Person
   owned behaviors
     state machine EnterBehavior
       initial state Waiting
-        receive incoming(p) / accept(p) -> Accepting
+        accept / -> Accepting
       state Accepting
-        after 30 seconds / off_grn() -> Waiting
-        receive passing(p) / pass_thru() -> Waiting
+        off_grn / -> Waiting
+        pass_thru / -> Waiting

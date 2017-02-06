@@ -1,23 +1,15 @@
 package de.dfki.cps.specific
 
 import java.io.File
-import java.util
-
-import com.sun.jmx.mbeanserver.NamedObject
 import de.dfki.cps.specific.sysml.{Diagram, Mapping, Project, Synthesis}
 import org.eclipse.emf.common.util.URI
 import org.eclipse.emf.ecore.EObject
 import org.eclipse.emf.ecore.resource.Resource
 import org.eclipse.emf.ecore.resource.Resource.Diagnostic
 import org.eclipse.emf.ecore.util.EcoreUtil
-import org.eclipse.ocl
 import org.eclipse.ocl.{Environment, OCL, SemanticException, SyntaxException}
 import org.eclipse.ocl.expressions.ExpressionsFactory
-import org.eclipse.ocl.uml.UMLFactory.{eINSTANCE => oclFactory}
-import org.eclipse.ocl.uml.util.OCLUMLUtil
 import org.eclipse.ocl.uml.{OCLExpression, UMLEnvironmentFactory, Variable}
-import org.eclipse.ocl.util.OCLUtil
-import org.eclipse.ocl.utilities.UtilitiesPackage
 import org.eclipse.papyrus.sysml.requirements.RequirementsFactory
 import org.eclipse.uml2.uml
 import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
@@ -68,6 +60,8 @@ object SysML {
       .map(source.trimSegments(1).appendSegment)
       .map(load)
 
+    var satisfies = 0
+
     project.satisfy.foreach { trace =>
       val Seq(modelName,path@_*) = trace.requirement.parts
       val model = resources.flatMap(_.getContents.asScala).collectFirst {
@@ -104,7 +98,9 @@ object SysML {
           abstr.getSuppliers.add(x)
           abstr.getClients.addAll(
             targets.collect {
-              case Some(x: uml.NamedElement) => x
+              case Some(x: uml.NamedElement) =>
+                satisfies += 1
+                x
             }.asJava
           )
           target.getContents.add(abstr)
@@ -112,20 +108,20 @@ object SysML {
       }
     }
 
-    println("loading realizations")
-
     val ocl = OCL.newInstance(new UMLEnvironmentFactory(target.getResourceSet))
 
     val mapped = mutable.HashMap.empty[uml.NamedElement,uml.NamedElement]
     val unmapped = mutable.HashSet.empty[uml.NamedElement]
+    var autoCount = 0
 
     def automap(supplyingContext: uml.Namespace, clientContext: uml.Namespace): Unit = {
       supplyingContext.getOwnedMembers.asScala.foreach { supplier =>
-        if (!mapped.contains(supplier) && !supplier.isInstanceOf[uml.Constraint] && !supplier.isInstanceOf[uml.Parameter] && !supplier.isInstanceOf[uml.Event]) {
+        if (!mapped.contains(supplier) && !supplier.isInstanceOf[uml.Constraint] && !supplier.isInstanceOf[uml.Parameter] && !supplier.isInstanceOf[uml.Event] && !supplier.isInstanceOf[uml.Realization]) {
           val client = clientContext.getOwnedMembers.asScala.find(_.getName == supplier.getName)
           client.fold[Unit] {
             unmapped += supplier
           } { client =>
+            autoCount += 1
             mapped += supplier -> client
             val realization = uml.UMLFactory.eINSTANCE.createRealization()
             realization.getSuppliers.add(supplier)
@@ -299,6 +295,10 @@ object SysML {
         defer.foreach(_())
       }
     }
+
+    println(s"project contains ${mapped.size*2 + satisfies * 2} mapped elements")
+    println(s"$satisfies traceable requirements")
+    println(s"${autoCount*2} elements were implicitly mapped")
 
     if (unmapped.nonEmpty) println( unmapped.size + " unmapped entities ")
     unmapped.foreach { x =>

@@ -10,7 +10,7 @@ block Building
     building: Building[*] <- gate
   constraints
     -- P7: A building does not communicate with itself.
-    inv: not (self.gate->includes(self))
+    inv P7: not (self.gate->includes(self))
 
 block Person
   operations
@@ -28,4 +28,4 @@ block Person
     -- P10: Any person authorised to be in a building must
     -- also be authorised to go into another building which
     -- communicates with the first one.
-    inv: aut->forAll(b|aut.building->includes(b))
+    inv P10: aut->forAll(b|aut.building->includes(b))

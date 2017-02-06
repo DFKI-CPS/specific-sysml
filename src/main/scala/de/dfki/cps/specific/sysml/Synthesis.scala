@@ -537,7 +537,11 @@ class Synthesis(resource: Resource) {
             opn.fold {
               error(elem.file, elem.pos, s"operation $op is not a member of the wrapping class")
             }{ opn =>
-              s.setSpecification(opn)
+              val realization = umlFactory.createRealization()
+              realization.setName("R_" + opn.getName + "_" + s.getName)
+              realization.getSuppliers.add(opn)
+              realization.getClients.add(s)
+              s.getModel.getPackagedElements.add(realization)
             }
         }
       }
