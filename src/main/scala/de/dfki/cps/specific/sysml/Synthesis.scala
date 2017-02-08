@@ -20,6 +20,8 @@ import org.eclipse.emf.ecore.resource.{Resource, ResourceSet}
 import org.eclipse.emf.ecore.util.EcoreUtil
 import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl
 import org.eclipse.ocl.uml.UMLEnvironmentFactory
+import org.eclipse.ocl.uml.util.OCLUMLUtil
+import org.eclipse.ocl.utilities.ExpressionInOCL
 import org.eclipse.papyrus.sysml.requirements.RequirementsFactory
 
 import scala.collection.JavaConverters._
@@ -629,6 +631,7 @@ class Synthesis(resource: Resource) {
                   val xp = umlFactory.createOpaqueExpression()
                   addPosAnnotation(xp, uc.pos)
                   xp.getBodies.add(str)
+                  xp.getBodies.add(constr.getSpecification.asInstanceOf[ExpressionInOCL[uml.Classifier,uml.Parameter]].getBodyExpression.toString)
                   xp.getLanguages.add("OCL")
                   xc.setSpecification(xp)
                   xc.getConstrainedElements.add(c)
@@ -701,7 +704,79 @@ class Synthesis(resource: Resource) {
           }
       }
     case Reference(name,tpe,isComposite,opposite,props,constraints) =>
+      props.collect {
+        case ReferenceProperty.Subsets(uc) =>
+          elem.uml.collect {
+            case op: uml.Property =>
+              try {
+                val str = s"${uc.content}->asSet()->includes($name)"
+                val oclHelper = ocl.createOCLHelper()
+                oclHelper.setContext(op.getClass_)
+                val constr = oclHelper.createInvariant(str)
+                val xc = if (this.includeOCL) {
+                  addPosAnnotation(constr,uc.pos)
+                  constr
+                } else {
+                  val xc = umlFactory.createConstraint()
+                  val xp = umlFactory.createOpaqueExpression()
+                  addPosAnnotation(xp, uc.pos)
+                  xp.getBodies.add(constr.getSpecification.asInstanceOf[ExpressionInOCL[uml.Classifier,uml.Parameter]].getBodyExpression.toString)
+                  xp.getLanguages.add("OCL")
+                  xc.setSpecification(xp)
+                  xc.setContext(op.getClass_)
+                  xc.getConstrainedElements.add(op)
+                  val hashName = hashString(str)
+                  xc.setName("Inv_" + hashName)
+                  xc
+                }
+                op.getClass_.getOwnedRules.add(xc)
+              } catch {
+                case e: ParserException =>
+                  error(uc.file, uc.pos, e.getMessage)
+              }
+          }
+      }
+      constraints.foreach {
+        case uc@UnprocessedConstraint(tpe,n,str) =>
+          val name = elem.uml.collect {
+            case op: uml.Property =>
+              try {
+                val oclHelper = ocl.createOCLHelper()
+                oclHelper.setAttributeContext(op.getClass_,op)
+                val constr = tpe match {
+                  case ConstraintType.Derive =>
+                    oclHelper.createDerivedValueExpression(str)
+                }
+                val xc = if (this.includeOCL) {
+                  addPosAnnotation(constr,uc.pos)
+                  constr
+                } else {
+                  val xc = umlFactory.createConstraint()
+                  val xp = umlFactory.createOpaqueExpression()
+                  op.subsettingContext()
+                  xp.getBodies.add(str)
+                  xp.getLanguages.add("OCL")
+                  addPosAnnotation(xp, uc.pos)
+                  xc.setSpecification(xp)
+                  n.fold {
+                    val hashName = hashString(str)
+                    xc.setName(tpe.toString + "_" + hashName)
+                  } { n =>
+                    xc.setName(n.name)
+                    addPosAnnotation(xc, n.pos)
+                  }
+                  xc.getConstrainedElements.add(op)
+                  xc
+                }
+                op.setIsDerived(true)
+                op.getClass_.getOwnedRules.add(xc)
+              } catch {
+                case e: ParserException =>
+                  error(uc.file, uc.pos, e.getMessage)
+              }
 
+          }
+      }
     case Property(name,tpe,props,constraints) =>
       constraints.foreach {
         case uc@UnprocessedConstraint(tpe,n,str) =>

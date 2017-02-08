@@ -4,7 +4,7 @@ bdd [package] fsl3::acs [ACS]
 block Building
   references
     gate: Building[*] <- building
-      derive: org_dom.dest
+      derive: org_dom.dest->asSet()
     building: Building[*] <- gate
     org_dom: Door[*] <- org
   constraints

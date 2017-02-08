@@ -19,6 +19,7 @@ import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
 import scala.collection.mutable
 import scala.collection.JavaConverters._
 import scala.io.Source
+import scala.util.control.NonFatal
 import scala.util.parsing.input.{Position, Reader}
 
 /**
@@ -420,16 +421,23 @@ object SysML {
             val text = c.getSpecification.asInstanceOf[OpaqueExpression].getBodies.get(0).trim
             val help = ocl.createOCLHelper()
             help.setContext(cls)
-            val inv = help.createInvariant(text)
-            val expr = inv.getSpecification.asInstanceOf[ExpressionInOCL].getBodyExpression
-            val texpr = translateExpr(expr,None)
-            val constr = uml.UMLFactory.eINSTANCE.createConstraint()
-            val cx = uml.UMLFactory.eINSTANCE.createOpaqueExpression()
-            cx.getLanguages.add("OCL")
-            cx.getBodies.add(texpr.toString)
-            constr.setSpecification(cx)
-            target.getContents.add(constr)
-            constr.getConstrainedElements.add(c)
+            val inv = try {
+              Some(help.createInvariant(text).getSpecification)
+            } catch {
+              case NonFatal(e) => None
+            }
+            inv.foreach {
+              case inv: ExpressionInOCL =>
+                val expr = inv.getBodyExpression
+                val texpr = translateExpr(expr,None)
+                val constr = uml.UMLFactory.eINSTANCE.createConstraint()
+                val cx = uml.UMLFactory.eINSTANCE.createOpaqueExpression()
+                cx.getLanguages.add("OCL")
+                cx.getBodies.add(texpr.toString)
+                constr.setSpecification(cx)
+                target.getContents.add(constr)
+                constr.getConstrainedElements.add(c)
+            }
           }
         case opn: uml.Operation =>
           val help = ocl.createOCLHelper()

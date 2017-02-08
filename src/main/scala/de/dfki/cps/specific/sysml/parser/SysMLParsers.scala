@@ -299,7 +299,7 @@ object SysMLParsers extends OclParsers {
       | simpleName[T] )
 
   def subsetsProperty: Parser[ReferenceProperty.Subsets] =
-    positioned( ("subsets" ~! qualifiedName[NamedElement]) ^^ { case _~s => ReferenceProperty.Subsets(s) } )
+    positioned( ("subsets" ~! captureConstraint(ConstraintType.Query,None,allExcept(RIGHT_BRACE, COMMA).+)) ^^ { case _~s => ReferenceProperty.Subsets(s) } )
 
   def queryProperty: Parser[OperationProperty.Query] =
     positioned("query" ^^^ OperationProperty.Query(true))

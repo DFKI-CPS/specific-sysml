@@ -17,7 +17,7 @@ object OperationProperty {
 }
 
 object ReferenceProperty {
-  case class Subsets(ref: Name) extends ReferenceProperty
+  case class Subsets(ref: UnprocessedConstraint) extends ReferenceProperty
 }
 
 object AttributeProperty {

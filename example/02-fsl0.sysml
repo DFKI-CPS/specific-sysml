@@ -17,4 +17,4 @@ block Person
     -- P3: A person can only be in one building.
     -- P4: A person must be in at least one building.
     -- P5: Any person in a given building is authorised to be there.
-    current: Building[1] { subsets aut }
+    current: Building[1] { subsets authorized }
