@@ -709,7 +709,8 @@ class Synthesis(resource: Resource) {
           elem.uml.collect {
             case op: uml.Property =>
               try {
-                val str = s"${uc.content}->asSet()->includes($name)"
+                val includes = if (tpe.isMany) "includesAll" else "includes"
+                val str = s"${uc.content}->asSet()->$includes($name)"
                 val oclHelper = ocl.createOCLHelper()
                 oclHelper.setContext(op.getClass_)
                 val constr = oclHelper.createInvariant(str)
@@ -753,7 +754,6 @@ class Synthesis(resource: Resource) {
                 } else {
                   val xc = umlFactory.createConstraint()
                   val xp = umlFactory.createOpaqueExpression()
-                  op.subsettingContext()
                   xp.getBodies.add(str)
                   xp.getLanguages.add("OCL")
                   addPosAnnotation(xp, uc.pos)
