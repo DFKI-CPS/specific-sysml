@@ -38,7 +38,7 @@ object SysML {
         synth.structure(b)
         synth.naming(b)
         synth.parseConstraints(b)
-        synth.messages.foreach(println)
+        target.getErrors.asScala.foreach(println)
         synth.positions.toMap
       case SysMLParsers.NoSuccess(msg,i) =>
         sys.error(s"$msg [${i.pos}]:\n${i.pos.longString}")
@@ -108,6 +108,48 @@ object SysML {
           )
           target.getContents.add(abstr)
           target.getContents.add(satisfy)
+      }
+    }
+
+    project.traces.foreach { trace =>
+      val Seq(modelName,path@_*) = trace.supplier.parts
+      val model = resources.flatMap(_.getContents.asScala).collectFirst {
+        case m: uml.Model if m.getName == modelName => m
+      }
+      if (model.isEmpty)
+        println(s"error: could not find model $modelName")
+      val supplier = model.flatMap { model =>
+        Option(EcoreUtil.getEObject(model,path.mkString("/")))
+      }
+      if (supplier.isEmpty)
+        println(s"error: could not find supplier ${path.mkString("::")}")
+      val targets = trace.elements.map { elemName =>
+        val Seq(targetModelName,path@_*) = elemName.parts
+        val targetModel = resources.flatMap(_.getContents.asScala).collectFirst {
+          case m: uml.Model if m.getName == targetModelName => m
+        }
+        if (targetModel.isEmpty)
+          println(s"error: could not find model $targetModelName")
+        val target = targetModel.flatMap { model =>
+          Option(EcoreUtil.getEObject(model,path.mkString("/")))
+        }
+        if (target.isEmpty)
+          println(s"error: could not find element ${path.mkString("::")}")
+        target
+      }
+      supplier.foreach {
+        case x: uml.NamedElement =>
+          val abstr = uml.UMLFactory.eINSTANCE.createAbstraction()
+          positions += abstr -> trace.pos
+          abstr.getSuppliers.add(x)
+          abstr.getClients.addAll(
+            targets.collect {
+              case Some(x: uml.NamedElement) =>
+                satisfies += 1
+                x
+            }.asJava
+          )
+          target.getContents.add(abstr)
       }
     }
 
@@ -414,6 +456,9 @@ object SysML {
       }
     }
 
+
+    var proofObligations = 0
+
     val constraints = resources.flatMap { res =>
       res.getAllContents.asScala.collect {
         case cls: uml.Classifier =>
@@ -428,6 +473,7 @@ object SysML {
             }
             inv.foreach {
               case inv: ExpressionInOCL =>
+                proofObligations += 1
                 val expr = inv.getBodyExpression
                 val texpr = translateExpr(expr,None)
                 val constr = uml.UMLFactory.eINSTANCE.createConstraint()
@@ -443,6 +489,7 @@ object SysML {
           val help = ocl.createOCLHelper()
           help.setOperationContext(opn.getClass_,opn)
           opn.getPreconditions.asScala.map { c =>
+            proofObligations += 1
             val text = c.getSpecification.asInstanceOf[OpaqueExpression].getBodies.get(0).trim
             val inv = help.createPrecondition(text)
             val expr = inv.getSpecification.asInstanceOf[ExpressionInOCL].getBodyExpression
@@ -456,6 +503,7 @@ object SysML {
             constr.getConstrainedElements.add(c)
           }
           opn.getPostconditions.asScala.map { c =>
+            proofObligations += 1
             val text = c.getSpecification.asInstanceOf[OpaqueExpression].getBodies.get(0).trim
             val inv = help.createPostcondition(text)
             val expr = inv.getSpecification.asInstanceOf[ExpressionInOCL].getBodyExpression
@@ -472,6 +520,7 @@ object SysML {
       }
     }.foreach(_ => ())
 
+    println(s"$proofObligations proof obligations")
     println(s"project contains ${mapped.size*2 + satisfies * 2} mapped elements")
     println(s"$satisfies traceable requirements")
     println(s"${autoCount*2} elements were implicitly mapped")

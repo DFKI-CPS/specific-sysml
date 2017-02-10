@@ -839,9 +839,24 @@ class Synthesis(resource: Resource) {
   val messages: mutable.Buffer[ParseError] = mutable.Buffer.empty
 
   private def warn(file: String, pos: Position, message: String): Unit =
-    messages += ParseError(file,pos,Severity.Warn,message)
+    resource.getWarnings.add(new Resource.Diagnostic {
+      def getMessage: String = message
+      def getLine: Int = pos.line
+      def getColumn: Int = pos.column
+      def getLocation: String = file
+    })
   private def error(file: String, pos: Position, message: String): Unit =
-    messages += ParseError(file,pos,Severity.Error,message)
+    resource.getErrors.add(new Resource.Diagnostic {
+      def getMessage: String = message
+      def getLine: Int = pos.line
+      def getColumn: Int = pos.column
+      def getLocation: String = file
+    })
   private def abort(file: String, pos: Position, message: String): Unit =
-    messages += ParseError(file,pos,Severity.Error,message)
+    resource.getErrors.add(new Resource.Diagnostic {
+      def getMessage: String = message
+      def getLine: Int = pos.line
+      def getColumn: Int = pos.column
+      def getLocation: String = file
+    })
 }

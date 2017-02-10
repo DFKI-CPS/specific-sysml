@@ -17,7 +17,9 @@ case class Mapping(supplier: String, client: UnprocessedConstraint, subMappings:
 
 case class Satisfy(requirement: Name, elements: Seq[Name]) extends Element
 
-case class Project(name: String, includes: Seq[String], mappings: Seq[Mapping], satisfy: Seq[Satisfy]) extends NamedElement
+case class Trace(supplier: Name, elements: Seq[Name]) extends Element
+
+case class Project(name: String, includes: Seq[String], mappings: Seq[Mapping], satisfy: Seq[Satisfy], traces: Seq[Trace]) extends NamedElement
 
 object DiagramKind {
   case object ActivityDiagram extends DiagramKind("act")

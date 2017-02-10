@@ -8,7 +8,7 @@ block Building
 block Person
   operations
     pass(b: Building)
-      pre:  authorized->includes(b)
+      pre:  authorized->includes(c)
       pre:  current <> b
       post: current = b
   references

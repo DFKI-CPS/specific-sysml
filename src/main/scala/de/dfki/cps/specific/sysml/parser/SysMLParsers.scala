@@ -63,6 +63,14 @@ object SysMLParsers extends OclParsers {
     case _ ~ n ~ elems => Satisfy(n,elems)
   }
 
+  def trace: Parser[Trace] = ("trace" ~! pathName[NamedElement] ~ traceElements) ^^ {
+    case _ ~ n ~ elems => Trace(n,elems)
+  }
+
+  /*def trace: Parser[Trace] = ("trace" ~! (pathName[NamedElement] <~ LEFT_ARROW) ~ captureConstraint(ConstraintType.Query,None,allExcept(INDENT,SEPARATOR,DEDENT,EOF).*)) ~ opt(indented(trace,"sub trace")) ^^ {
+    case (_~n)~c~ss => Trace(n,c,ss.getOrElse(Nil))
+  }*/
+
   def include: Parser[Seq[String]] =
     ( "include" ~> textLine ^^ (l => Seq(l))
     | "include" ~> indented(textLine, "file location") )
@@ -77,8 +85,8 @@ object SysMLParsers extends OclParsers {
 
   def project: Parser[Project] =
     "project" ~! enclosed(LEFT_SQUARE_BRACKET,name.+,RIGHT_SQUARE_BRACKET) ~
-       separated(include | realization | satisfy) ^^ {
-      case _ ~ name ~ elems => Project(name.mkString(" "),(elems collect every[Seq[String]]).flatten,elems collect every[Mapping],elems collect every[Satisfy])
+       separated(include | realization | satisfy | trace) ^^ {
+      case _ ~ name ~ elems => Project(name.mkString(" "),(elems collect every[Seq[String]]).flatten,elems collect every[Mapping],elems collect every[Satisfy], elems collect every[Trace])
     }
 
 
