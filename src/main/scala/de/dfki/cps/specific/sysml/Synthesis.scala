@@ -22,11 +22,22 @@ import org.eclipse.emf.ecore.xmi.impl.EcoreResourceFactoryImpl
 import org.eclipse.ocl.uml.UMLEnvironmentFactory
 import org.eclipse.ocl.uml.util.OCLUMLUtil
 import org.eclipse.ocl.utilities.ExpressionInOCL
-import org.eclipse.papyrus.sysml.requirements.RequirementsFactory
+import org.eclipse.papyrus.sysml.requirements.{RequirementsFactory, RequirementsPackage}
 
+import scala.beans.BeanProperty
 import scala.collection.JavaConverters._
 import scala.collection.mutable
-import scala.util.parsing.input.{NoPosition, Position, Reader}
+import scala.util.parsing.input.{NoPosition, OffsetPosition, Position, Reader}
+
+case class SemanticMessage(
+  @BeanProperty location: String,
+  position: Position,
+  @BeanProperty message: String,
+  ref: Option[uml.NamedElement]
+) extends Resource.Diagnostic {
+  def getLine: Int = position.line
+  def getColumn: Int = position.column
+}
 
 object Synthesis {
   var initialized = false
@@ -48,17 +59,19 @@ object Synthesis {
     library.getPackageRegistry put (sysml.SysmlPackage.eNS_URI, sysml.SysmlPackage.eINSTANCE)
     library.getPackageRegistry put (BlocksPackage.eNS_URI, BlocksPackage.eINSTANCE)
     library.getPackageRegistry put (PortandflowsPackage.eNS_URI, PortandflowsPackage.eINSTANCE)
+    library.getPackageRegistry put (RequirementsPackage.eNS_URI, RequirementsPackage.eINSTANCE)
   }
 }
 
-class Synthesis(resource: Resource) {
+class Synthesis(source: String, resource: Resource) {
   var includeOCL = false
   var includeProfileApplications = true
+
   private def hashString(s: String) =
-    java.lang.Long.toString(s.hashCode.toLong + Int.MaxValue,16)
+    java.lang.Long.toString(s.hashCode.toLong + Int.MaxValue, 16)
 
   val library = resource.getResourceSet
-  val positions = mutable.Map.empty[EObject,Position].withDefaultValue(NoPosition)
+  val positions = mutable.Map.empty[EObject, Position].withDefaultValue(NoPosition)
 
   Synthesis.init()
   /*
@@ -75,9 +88,9 @@ class Synthesis(resource: Resource) {
     * UseCases
     */
 
-  private val appliedProfiles = Set("SysML","Blocks","PortAndFlows","Requirements")
+  private val appliedProfiles = Set("SysML", "Blocks", "PortAndFlows", "Requirements")
 
-  val primitives = library.getEObject(URI.createURI("pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"),true).asInstanceOf[uml.Model]
+  val primitives = library.getEObject(URI.createURI("pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"), true).asInstanceOf[uml.Model]
 
   def addPosAnnotation(elem: EObject, pos: Position) = if (pos != NoPosition) {
     /*val annon = ecoreFactory.createEAnnotation()
@@ -94,7 +107,7 @@ class Synthesis(resource: Resource) {
   private val blocksFactory = BlocksFactory.eINSTANCE
   private val portsFactory = PortandflowsFactory.eINSTANCE
 
-  val models = mutable.Map.empty[String,Model]
+  val models = mutable.Map.empty[String, Model]
 
   // PROFILE APPLICATIONS
   lazy val profs = library.getResource(URI.createURI("pathmap://SysML_PROFILES/SysML.profile.uml"), true)
@@ -117,13 +130,15 @@ class Synthesis(resource: Resource) {
   val chain = new DiagnosticChain {
     def merge(diagnostic: Diagnostic) =
       println(s"merge: $diagnostic")
+
     def addAll(diagnostic: Diagnostic) =
       println(s"addAll: $diagnostic")
+
     def add(diagnostic: Diagnostic) =
       println(s"add: $diagnostic")
   }
 
-  val context = new util.HashMap[AnyRef,AnyRef]()
+  val context = new util.HashMap[AnyRef, AnyRef]()
 
   val validate = new UMLValidator
 
@@ -149,9 +164,9 @@ class Synthesis(resource: Resource) {
   def structure(owner: uml.Package, member: Element): Unit = member match {
     case Block(name, compartments, comments) =>
       val c = umlFactory.createClass()
-      addPosAnnotation(c,member.pos)
+      addPosAnnotation(c, member.pos)
       val b = blocksFactory.createBlock()
-      addPosAnnotation(b,member.pos)
+      addPosAnnotation(b, member.pos)
       b.setBase_Class(c)
       c.setName(name)
       resource.getContents.add(b)
@@ -160,10 +175,10 @@ class Synthesis(resource: Resource) {
       compartments.flatMap(_.content.map(x => structure(b, x)))
     case Requirement(name, text) =>
       val c = umlFactory.createClass()
-      addPosAnnotation(c,member.pos)
+      addPosAnnotation(c, member.pos)
       c.setName(name)
       val r = requirementsFactory.createRequirement()
-      addPosAnnotation(r,member.pos)
+      addPosAnnotation(r, member.pos)
       r.setBase_Class(c)
       r.setText(text)
       r.setId(name)
@@ -178,52 +193,52 @@ class Synthesis(resource: Resource) {
     case Operation(name, tpe, params, props, constraints) =>
       val c = owner.getBase_Class
       val op = umlFactory.createOperation()
-      addPosAnnotation(op,member.pos)
+      addPosAnnotation(op, member.pos)
       op.setName(name)
       c.getOwnedOperations.add(op)
       props.collect {
         case p@OperationProperty.Query(v) =>
           if (op.eIsSet(op.eClass().getEStructuralFeature("isQuery"))) {
-            if (op.isQuery != v) error(member.file, p.pos,"inconsistent operation constraint")
+            if (op.isQuery != v) error(member.file, p.pos, "inconsistent operation constraint")
           } else {
             op.setIsQuery(v)
           }
         case p@TypedElementProperty.Ordered(v) =>
           if (op.eIsSet(op.eClass().getEStructuralFeature("isOrdered"))) {
-            if (op.isOrdered != v) error(member.file, p.pos,"inconsistent operation constraint")
+            if (op.isOrdered != v) error(member.file, p.pos, "inconsistent operation constraint")
           } else {
             op.setIsOrdered(v)
           }
         case p@TypedElementProperty.Unique(v) =>
           if (op.eIsSet(op.eClass().getEStructuralFeature("isUnique"))) {
-            if (op.isUnique != v) error(member.file, p.pos,"inconsistent operation constraint")
+            if (op.isUnique != v) error(member.file, p.pos, "inconsistent operation constraint")
           } else {
             op.setIsUnique(v)
           }
       }
       member.uml = Some(op)
-      params.foreach(structure(op,_))
-    case Reference(name,tpe,isComposite,oppositeName,props,constraint) =>
+      params.foreach(structure(op, _))
+    case Reference(name, tpe, isComposite, oppositeName, props, constraint) =>
       val c = owner.getBase_Class
       val p = umlFactory.createProperty()
-      addPosAnnotation(p,member.pos)
+      addPosAnnotation(p, member.pos)
       tpe.multiplicity.foreach { x =>
         p.setLower(x.lower.toInt)
         p.setUpper(x.upper.value.toInt)
-        addPosAnnotation(p.getLowerValue,x.pos)
-        addPosAnnotation(p.getUpperValue,x.pos)
+        addPosAnnotation(p.getLowerValue, x.pos)
+        addPosAnnotation(p.getUpperValue, x.pos)
       }
       p.setIsComposite(isComposite)
       props.collect {
         case pr@TypedElementProperty.Ordered(v) =>
           if (p.eIsSet(p.eClass().getEStructuralFeature("isOrdered"))) {
-            if (p.isOrdered != v) error(member.file, pr.pos,"inconsistent operation constraint")
+            if (p.isOrdered != v) error(member.file, pr.pos, "inconsistent operation constraint")
           } else {
             p.setIsOrdered(v)
           }
         case pr@TypedElementProperty.Unique(v) =>
           if (p.eIsSet(p.eClass().getEStructuralFeature("isUnique"))) {
-            if (p.isUnique != v) error(member.file, pr.pos,"inconsistent operation constraint")
+            if (p.isUnique != v) error(member.file, pr.pos, "inconsistent operation constraint")
           } else {
             p.setIsUnique(v)
           }
@@ -231,26 +246,26 @@ class Synthesis(resource: Resource) {
       p.setName(name)
       c.getOwnedAttributes.add(p)
       member.uml = Some(p)
-    case Property(name,tpe,props,constraint) =>
+    case Property(name, tpe, props, constraint) =>
       val c = owner.getBase_Class
       val p = umlFactory.createProperty()
-      addPosAnnotation(p,member.pos)
+      addPosAnnotation(p, member.pos)
       tpe.multiplicity.foreach { x =>
         p.setLower(x.lower.toInt)
         p.setUpper(x.upper.value.toInt)
-        addPosAnnotation(p.getLowerValue,x.pos)
-        addPosAnnotation(p.getUpperValue,x.pos)
+        addPosAnnotation(p.getLowerValue, x.pos)
+        addPosAnnotation(p.getUpperValue, x.pos)
       }
       props.collect {
         case pr@TypedElementProperty.Ordered(v) =>
           if (p.eIsSet(p.eClass().getEStructuralFeature("isOrdered"))) {
-            if (p.isOrdered != v) error(member.file, pr.pos,"inconsistent operation constraint")
+            if (p.isOrdered != v) error(member.file, pr.pos, "inconsistent operation constraint")
           } else {
             p.setIsOrdered(v)
           }
         case pr@TypedElementProperty.Unique(v) =>
           if (p.eIsSet(p.eClass().getEStructuralFeature("isUnique"))) {
-            if (p.isUnique != v) error(member.file, pr.pos,"inconsistent operation constraint")
+            if (p.isUnique != v) error(member.file, pr.pos, "inconsistent operation constraint")
           } else {
             p.setIsUnique(v)
           }
@@ -258,16 +273,16 @@ class Synthesis(resource: Resource) {
       p.setName(name)
       c.getOwnedAttributes.add(p)
       member.uml = Some(p)
-    case Port(name,direction: Option[FlowDirection],tpe) =>
+    case Port(name, direction: Option[FlowDirection], tpe) =>
       val c = owner.getBase_Class
       val b = umlFactory.createPort()
       val p = portsFactory.createFlowPort()
-      addPosAnnotation(b,member.pos)
+      addPosAnnotation(b, member.pos)
       tpe.multiplicity.foreach { x =>
         b.setLower(x.lower.toInt)
         b.setUpper(x.upper.value.toInt)
-        addPosAnnotation(b.getLowerValue,x.pos)
-        addPosAnnotation(b.getUpperValue,x.pos)
+        addPosAnnotation(b.getLowerValue, x.pos)
+        addPosAnnotation(b.getUpperValue, x.pos)
       }
       direction.foreach(direction =>
         p.setDirection(direction match {
@@ -284,7 +299,7 @@ class Synthesis(resource: Resource) {
     case StateMachine(name, states, op) =>
       val c = owner.getBase_Class
       val stm = umlFactory.createProtocolStateMachine()
-      addPosAnnotation(stm,member.pos)
+      addPosAnnotation(stm, member.pos)
       val reg = umlFactory.createRegion()
       stm.setName(name)
       reg.setName(name)
@@ -292,8 +307,8 @@ class Synthesis(resource: Resource) {
       stm.getRegions.add(reg)
       states.map(st => structure(reg, st))
       member.uml = Some(stm)
-    case UnprocessedConstraint(_,_,_) =>
-      // TODO
+    case UnprocessedConstraint(_, _, _) =>
+    // TODO
     case other =>
       error(other.file, other.pos, s"could not synthesize $other")
   }
@@ -301,23 +316,23 @@ class Synthesis(resource: Resource) {
   def structure(op: uml.Operation, param: Parameter): Unit = param match {
     case Parameter(name, tpe, props) =>
       val p = umlFactory.createParameter()
-      addPosAnnotation(p,param.pos)
+      addPosAnnotation(p, param.pos)
       tpe.multiplicity.foreach { x =>
         p.setLower(x.lower.toInt)
         p.setUpper(x.upper.value.toInt)
-        addPosAnnotation(p.getLowerValue,x.pos)
-        addPosAnnotation(p.getUpperValue,x.pos)
+        addPosAnnotation(p.getLowerValue, x.pos)
+        addPosAnnotation(p.getUpperValue, x.pos)
       }
       props.collect {
         case pr@TypedElementProperty.Ordered(v) =>
           if (p.eIsSet(p.eClass().getEStructuralFeature("isOrdered"))) {
-            if (p.isOrdered != v) error(param.file, pr.pos,"inconsistent operation constraint")
+            if (p.isOrdered != v) error(param.file, pr.pos, "inconsistent operation constraint")
           } else {
             p.setIsOrdered(v)
           }
         case pr@TypedElementProperty.Unique(v) =>
           if (p.eIsSet(p.eClass().getEStructuralFeature("isUnique"))) {
-            if (p.isUnique != v) error(param.file, pr.pos,"inconsistent operation constraint")
+            if (p.isUnique != v) error(param.file, pr.pos, "inconsistent operation constraint")
           } else {
             p.setIsUnique(v)
           }
@@ -330,7 +345,7 @@ class Synthesis(resource: Resource) {
   def structure(stm: uml.Region, state: State): Option[uml.Vertex] = state match {
     case ConcreteState(name, transitions, isInitial) =>
       val st = umlFactory.createState()
-      addPosAnnotation(st,state.pos)
+      addPosAnnotation(st, state.pos)
       st.setName(name)
       stm.getSubvertices.add(st)
       transitions.map(ts => structure(st, ts))
@@ -348,7 +363,7 @@ class Synthesis(resource: Resource) {
       Some(st)
     case Choice(transitions) =>
       val st = umlFactory.createPseudostate()
-      addPosAnnotation(st,state.pos)
+      addPosAnnotation(st, state.pos)
       st.setKind(PseudostateKind.CHOICE_LITERAL)
       stm.getSubvertices.add(st)
       transitions.map(ts => structure(st, ts))
@@ -364,35 +379,35 @@ class Synthesis(resource: Resource) {
       val reg = source.getContainer
       structure(reg, st).foreach { st =>
         val ts = umlFactory.createProtocolTransition()
-        addPosAnnotation(ts,trans.pos)
+        addPosAnnotation(ts, trans.pos)
         trans.uml = Some(ts)
         ts.setSource(source)
         ts.setTarget(st)
         reg.getTransitions.add(ts)
-        trigger.foreach(structure(ts,_))
+        trigger.foreach(structure(ts, _))
       }
     case Transition(trigger, guard, action, UnresolvedTargetStateName(name)) =>
       val reg = source.getContainer
       val ts = umlFactory.createProtocolTransition()
-      addPosAnnotation(ts,trans.pos)
+      addPosAnnotation(ts, trans.pos)
       trans.uml = Some(ts)
       ts.setSource(source)
       reg.getTransitions.add(ts)
-      trigger.foreach(structure(ts,_))
+      trigger.foreach(structure(ts, _))
   }
 
-  val timeEvents = mutable.Map.empty[Long,uml.TimeEvent]
+  val timeEvents = mutable.Map.empty[Long, uml.TimeEvent]
 
   def structure(ts: uml.ProtocolTransition, trigger: Trigger): Unit = trigger match {
     case trig@Trigger.Call(opn) =>
       trig.uml = Some(ts.createTrigger(s"T_Call_$opn"))
-    case trig@Trigger.Receive(port,v) =>
+    case trig@Trigger.Receive(port, v) =>
       val t = umlFactory.createTrigger()
       trig.uml = Some(t)
-      //ts.getTriggers.add(t)
+    //ts.getTriggers.add(t)
     case trig@Trigger.Timeout(duration) =>
       val t = umlFactory.createTrigger()
-      addPosAnnotation(t,trig.pos)
+      addPosAnnotation(t, trig.pos)
       val e = timeEvents.getOrElseUpdate(duration.duration.length, {
         val e = umlFactory.createTimeEvent()
         e.setName("timeEvent_" + duration.duration.length)
@@ -401,7 +416,7 @@ class Synthesis(resource: Resource) {
         val o = umlFactory.createOpaqueExpression()
         o.getLanguages.add("SCALA")
         o.getBodies.add(duration.duration.toString)
-        addPosAnnotation(o,duration.pos)
+        addPosAnnotation(o, duration.pos)
         time.setExpr(o)
         e.setWhen(time)
         ts.getModel.getPackagedElements.add(e)
@@ -442,20 +457,20 @@ class Synthesis(resource: Resource) {
           case tpe: uml.Type if tpe.getName == t.name => tpe
         }
       case ResolvedName(other) =>
-        resolveTypeNameInternal(scope,SimpleName(other.name) at name)
+        resolveTypeNameInternal(scope, SimpleName(other.name) at name)
       case PathName(name) =>
         if (name.isEmpty) None
-        else if (name.length == 1) resolveTypeNameInternal(scope,SimpleName(name.head)) else None
+        else if (name.length == 1) resolveTypeNameInternal(scope, SimpleName(name.head)) else None
       case SimpleName(n) =>
         val members = scope.getMembers.asScala
         val res = members.find(_.getName == n) collect {
           case tp: uml.Type => tp
         }
         val above = Option(scope.getNamespace)
-        res orElse above.flatMap(resolveTypeNameInternal(_,SimpleName(n) at name))
+        res orElse above.flatMap(resolveTypeNameInternal(_, SimpleName(n) at name))
     }
 
-    resolveTypeNameInternal(scope,name) orElse {
+    resolveTypeNameInternal(scope, name) orElse {
       error(file, name.pos, s"not found: type ${name.parts.mkString("::")}")
       None
     }
@@ -538,7 +553,7 @@ class Synthesis(resource: Resource) {
             val opn = cls.flatMap(_.getOperations.asScala.find(_.getName == op))
             opn.fold {
               error(elem.file, elem.pos, s"operation $op is not a member of the wrapping class")
-            }{ opn =>
+            } { opn =>
               val realization = umlFactory.createRealization()
               realization.setName("R_" + opn.getName + "_" + s.getName)
               realization.getSuppliers.add(opn)
@@ -548,11 +563,11 @@ class Synthesis(resource: Resource) {
         }
       }
       states.map(naming)
-    case ConcreteState(name,tss,initial) =>
+    case ConcreteState(name, tss, initial) =>
       tss.map(naming)
     case Choice(tss) =>
       tss.map(naming)
-    case Transition(trigger,guard,action,target) =>
+    case Transition(trigger, guard, action, target) =>
       elem.uml.collect {
         case ts: uml.Transition =>
           trigger.foreach {
@@ -567,13 +582,13 @@ class Synthesis(resource: Resource) {
                   case tg: uml.Trigger =>
                     val eventName = s"E_Call_$op"
                     val event = Option(ts.getModel.getPackagedElement(eventName)).map(_.asInstanceOf[uml.Event])
-                        .getOrElse {
-                          val e = umlFactory.createCallEvent()
-                          e.setName(eventName)
-                          e.setOperation(opn)
-                          ts.getModel.getPackagedElements.add(e)
-                          e
-                        }
+                      .getOrElse {
+                        val e = umlFactory.createCallEvent()
+                        e.setName(eventName)
+                        e.setOperation(opn)
+                        ts.getModel.getPackagedElements.add(e)
+                        e
+                      }
                     tg.setEvent(event)
                 }
               }
@@ -604,7 +619,7 @@ class Synthesis(resource: Resource) {
 
   lazy val ocl = {
     if (includeOCL)
-      OCL.newInstance(new UMLEnvironmentFactory(library),resource)
+      OCL.newInstance(new UMLEnvironmentFactory(library), resource)
     else
       OCL.newInstance(new UMLEnvironmentFactory(library))
   }
@@ -615,7 +630,7 @@ class Synthesis(resource: Resource) {
     case r: Requirement => // nothing to do
     case b: Block =>
       b.members.foreach {
-        case uc@UnprocessedConstraint(tpe,n,str) =>
+        case uc@UnprocessedConstraint(tpe, n, str) =>
           b.uml.collect {
             case c: uml.Class =>
               try {
@@ -624,14 +639,14 @@ class Synthesis(resource: Resource) {
                 helper.setContext(c)
                 val constr = helper.createInvariant(str)
                 val xc = if (this.includeOCL) {
-                  addPosAnnotation(constr,uc.pos)
+                  addPosAnnotation(constr, uc.pos)
                   constr
                 } else {
                   val xc = umlFactory.createConstraint()
                   val xp = umlFactory.createOpaqueExpression()
                   addPosAnnotation(xp, uc.pos)
                   xp.getBodies.add(str)
-                  xp.getBodies.add(constr.getSpecification.asInstanceOf[ExpressionInOCL[uml.Classifier,uml.Parameter]].getBodyExpression.toString)
+                  xp.getBodies.add(constr.getSpecification.asInstanceOf[ExpressionInOCL[uml.Classifier, uml.Parameter]].getBodyExpression.toString)
                   xp.getLanguages.add("OCL")
                   xc.setSpecification(xp)
                   xc.getConstrainedElements.add(c)
@@ -648,19 +663,19 @@ class Synthesis(resource: Resource) {
               } catch {
                 case e: ParserException =>
                   println(e.getDiagnostic.toString)
-                  //e.printStackTrace()
+                //e.printStackTrace()
               }
           }
         case other => parseConstraints(other)
       }
-    case Operation(name,tpe,params,props,constraints) =>
+    case Operation(name, tpe, params, props, constraints) =>
       constraints.foreach {
-        case uc@UnprocessedConstraint(tpe,n,str) =>
+        case uc@UnprocessedConstraint(tpe, n, str) =>
           val name = elem.uml.collect {
             case op: uml.Operation =>
               try {
                 val oclHelper = ocl.createOCLHelper()
-                oclHelper.setOperationContext(op.getClass_,op)
+                oclHelper.setOperationContext(op.getClass_, op)
                 val constr = tpe match {
                   case ConstraintType.Pre =>
                     oclHelper.createPrecondition(str)
@@ -670,7 +685,7 @@ class Synthesis(resource: Resource) {
                     oclHelper.createPostcondition(str)
                 }
                 val xc = if (this.includeOCL) {
-                  addPosAnnotation(constr,uc.pos)
+                  addPosAnnotation(constr, uc.pos)
                   constr
                 } else {
                   val xc = umlFactory.createConstraint()
@@ -703,7 +718,7 @@ class Synthesis(resource: Resource) {
               }
           }
       }
-    case Reference(name,tpe,isComposite,opposite,props,constraints) =>
+    case Reference(name, tpe, isComposite, opposite, props, constraints) =>
       props.collect {
         case ReferenceProperty.Subsets(uc) =>
           elem.uml.collect {
@@ -715,13 +730,13 @@ class Synthesis(resource: Resource) {
                 oclHelper.setContext(op.getClass_)
                 val constr = oclHelper.createInvariant(str)
                 val xc = if (this.includeOCL) {
-                  addPosAnnotation(constr,uc.pos)
+                  addPosAnnotation(constr, uc.pos)
                   constr
                 } else {
                   val xc = umlFactory.createConstraint()
                   val xp = umlFactory.createOpaqueExpression()
                   addPosAnnotation(xp, uc.pos)
-                  xp.getBodies.add(constr.getSpecification.asInstanceOf[ExpressionInOCL[uml.Classifier,uml.Parameter]].getBodyExpression.toString)
+                  xp.getBodies.add(constr.getSpecification.asInstanceOf[ExpressionInOCL[uml.Classifier, uml.Parameter]].getBodyExpression.toString)
                   xp.getLanguages.add("OCL")
                   xc.setSpecification(xp)
                   xc.setContext(op.getClass_)
@@ -738,18 +753,18 @@ class Synthesis(resource: Resource) {
           }
       }
       constraints.foreach {
-        case uc@UnprocessedConstraint(tpe,n,str) =>
+        case uc@UnprocessedConstraint(tpe, n, str) =>
           val name = elem.uml.collect {
             case op: uml.Property =>
               try {
                 val oclHelper = ocl.createOCLHelper()
-                oclHelper.setAttributeContext(op.getClass_,op)
+                oclHelper.setAttributeContext(op.getClass_, op)
                 val constr = tpe match {
                   case ConstraintType.Derive =>
                     oclHelper.createDerivedValueExpression(str)
                 }
                 val xc = if (this.includeOCL) {
-                  addPosAnnotation(constr,uc.pos)
+                  addPosAnnotation(constr, uc.pos)
                   constr
                 } else {
                   val xc = umlFactory.createConstraint()
@@ -777,20 +792,20 @@ class Synthesis(resource: Resource) {
 
           }
       }
-    case Property(name,tpe,props,constraints) =>
+    case Property(name, tpe, props, constraints) =>
       constraints.foreach {
-        case uc@UnprocessedConstraint(tpe,n,str) =>
+        case uc@UnprocessedConstraint(tpe, n, str) =>
           val name = elem.uml.collect {
             case op: uml.Property =>
               try {
                 val oclHelper = ocl.createOCLHelper()
-                oclHelper.setAttributeContext(op.getClass_,op)
+                oclHelper.setAttributeContext(op.getClass_, op)
                 val constr = tpe match {
                   case ConstraintType.Derive =>
                     oclHelper.createDerivedValueExpression(str)
                 }
                 val xc = if (this.includeOCL) {
-                  addPosAnnotation(constr,uc.pos)
+                  addPosAnnotation(constr, uc.pos)
                   constr
                 } else {
                   val xc = umlFactory.createConstraint()
@@ -817,16 +832,16 @@ class Synthesis(resource: Resource) {
               }
           }
       }
-    case Port(name,dir,tpe) =>
-    case StateMachine(name,states,opn) =>
+    case Port(name, dir, tpe) =>
+    case StateMachine(name, states, opn) =>
       states.foreach(parseConstraints)
-    case ConcreteState(name,tss,initial) =>
+    case ConcreteState(name, tss, initial) =>
       tss.foreach(parseConstraints)
     case Choice(tss) =>
       tss.foreach(parseConstraints)
-    case Transition(trigger,guard,action,UnresolvedTargetStateName(name)) =>
+    case Transition(trigger, guard, action, UnresolvedTargetStateName(name)) =>
       trigger.foreach(parseConstraints)
-    case Transition(trigger,guard,action,InlineTargetState(st)) =>
+    case Transition(trigger, guard, action, InlineTargetState(st)) =>
       trigger.foreach(parseConstraints)
       parseConstraints(st)
     case Trigger.Receive(portName, variable) =>
@@ -836,27 +851,25 @@ class Synthesis(resource: Resource) {
       error(elem.file, elem.pos, s"could not synthesize $other")
   }
 
-  val messages: mutable.Buffer[ParseError] = mutable.Buffer.empty
+  private def warn(file: String, pos: Position, message: String, ref: Option[uml.NamedElement] = None): Unit = {
+    val position = ref.fold {
+      pos.line + ":" + pos.column
+    } { n =>
+      pos.line + ":" + pos.column + "-" + (pos.column + n.getName.length)
+    }
+    println(s"[warn] $source:$position: $message")
+    println(pos.longString)
+    resource.getWarnings.add(SemanticMessage(file,pos,message,ref))
+  }
 
-  private def warn(file: String, pos: Position, message: String): Unit =
-    resource.getWarnings.add(new Resource.Diagnostic {
-      def getMessage: String = message
-      def getLine: Int = pos.line
-      def getColumn: Int = pos.column
-      def getLocation: String = file
-    })
-  private def error(file: String, pos: Position, message: String): Unit =
-    resource.getErrors.add(new Resource.Diagnostic {
-      def getMessage: String = message
-      def getLine: Int = pos.line
-      def getColumn: Int = pos.column
-      def getLocation: String = file
-    })
-  private def abort(file: String, pos: Position, message: String): Unit =
-    resource.getErrors.add(new Resource.Diagnostic {
-      def getMessage: String = message
-      def getLine: Int = pos.line
-      def getColumn: Int = pos.column
-      def getLocation: String = file
-    })
+  private def error(file: String, pos: Position, message: String, ref: Option[uml.NamedElement] = None): Unit = {
+    val position = ref.fold {
+      pos.line + ":" + pos.column
+    } { n =>
+      pos.line + ":" + pos.column + "-" + (pos.column + n.getName.length)
+    }
+    println(s"[error] $source:$position: $message")
+    println(pos.longString)
+    resource.getErrors.add(SemanticMessage(file,pos,message,ref))
+  }
 }

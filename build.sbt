@@ -1,7 +1,8 @@
 organization := "de.dfki.cps"
 name := "specific-sysml"
-version := "0.2.9"
+version := "0.2.10"
 scalaVersion := "2.11.8"
+scalaVersion in ThisBuild := "2.11.8"
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 bintrayOrganization := Some("dfki-cps")
 
@@ -16,3 +17,5 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.0+" % "test",
   "de.dfki.cps" % "specific-dependencies" % "4.6.4"
 )
+
+enablePlugins(JavaAppPackaging)
