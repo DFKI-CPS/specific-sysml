@@ -225,6 +225,19 @@ object SysML {
       val parameterMappings = mutable.Map.empty[uml.Parameter, expressions.OCLExpression[uml.Classifier]]
       val selfMappings = mutable.Map.empty[uml.Operation, expressions.OCLExpression[uml.Classifier]]
 
+      def extractClient(expr: org.eclipse.ocl.expressions.OCLExpression[uml.Classifier]): Option[uml.NamedElement] = expr match {
+        case prop: org.eclipse.ocl.uml.PropertyCallExp =>
+          Some(prop.getReferredProperty)
+        case op: org.eclipse.ocl.uml.OperationCallExp =>
+          Some(op.getReferredOperation)
+        case iter: org.eclipse.ocl.uml.IteratorExp =>
+          extractClient(iter.getBody)
+        case other =>
+          //println("error: " + other)
+          None
+      }
+
+
       def submapping(supplyingContext: uml.Namespace, clientContext: uml.Namespace, otherMappings: Seq[Mapping])(mapping: Mapping): () => Unit = {
         if (supplyingContext.isInstanceOf[uml.Operation]) {
           val op = mapped(supplyingContext).asInstanceOf[uml.Operation]
@@ -243,12 +256,23 @@ object SysML {
           val q = helper.createQuery(mapping.client.content)
           if (mapping.supplier == "self") {
             selfMappings(supplyingContext.asInstanceOf[uml.Operation]) = q
+
           } else {
             val supplier = supplyingContext.getMembers.asScala.find(_.getName == mapping.supplier)
             if (supplier.isEmpty) {
               error(source.toString, mapping.pos, s"element '${mapping.supplier}' is not a member of ${supplyingContext.getName}", supplier.collect(every[uml.NamedElement]))
             }
             supplier.foreach { case supplier: uml.Parameter =>
+              val realization = uml.UMLFactory.eINSTANCE.createRealization()
+              positions += realization -> mapping.pos
+              realization.getSuppliers.add(supplier)
+              val umapping = uml.UMLFactory.eINSTANCE.createOpaqueExpression()
+              positions += umapping -> mapping.client.pos
+              umapping.getLanguages.add("OCL")
+              umapping.getBodies.add(mapping.client.content)
+              realization.setMapping(umapping)
+              extractClient(q).foreach(realization.getClients.add)
+              target.getContents.add(realization)
               parameterMappings(supplier) = q
             }
           }
@@ -307,19 +331,6 @@ object SysML {
               helper.setValidating(false)
               val client: Option[uml.NamedElement] = try {
                 val clientExpr = helper.createQuery(mapping.client.content)
-
-                def extractClient(expr: org.eclipse.ocl.expressions.OCLExpression[uml.Classifier]): Option[uml.NamedElement] = expr match {
-                  case prop: org.eclipse.ocl.uml.PropertyCallExp =>
-                    Some(prop.getReferredProperty)
-                  case op: org.eclipse.ocl.uml.OperationCallExp =>
-                    Some(op.getReferredOperation)
-                  case iter: org.eclipse.ocl.uml.IteratorExp =>
-                    extractClient(iter.getBody)
-                  case other =>
-                    println("error: " + other)
-                    None
-                }
-
                 extractClient(clientExpr)
               } catch {
                 case s: SyntaxException =>

@@ -1,6 +1,6 @@
 organization := "de.dfki.cps"
 name := "specific-sysml"
-version := "0.2.10"
+version := "0.2.11"
 scalaVersion := "2.11.8"
 scalaVersion in ThisBuild := "2.11.8"
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
