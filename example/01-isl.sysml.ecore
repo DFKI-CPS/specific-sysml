@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:Requirements="http://www.eclipse.org/papyrus/0.7.0/SysML/Requirements" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+  <uml:Model name="isl">
+    <packageImport importedPackage="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"/>
+    <packagedElement xsi:type="uml:Package" name="acs">
+      <packagedElement xsi:type="uml:Class" name="P1"/>
+      <packagedElement xsi:type="uml:Class" name="P2"/>
+      <packagedElement xsi:type="uml:Class" name="P3"/>
+      <packagedElement xsi:type="uml:Class" name="P4"/>
+      <packagedElement xsi:type="uml:Class" name="P5"/>
+      <packagedElement xsi:type="uml:Class" name="P6"/>
+      <packagedElement xsi:type="uml:Class" name="P7"/>
+      <packagedElement xsi:type="uml:Class" name="P8"/>
+      <packagedElement xsi:type="uml:Class" name="P9"/>
+      <packagedElement xsi:type="uml:Class" name="P10"/>
+      <packagedElement xsi:type="uml:Class" name="P11"/>
+      <packagedElement xsi:type="uml:Class" name="P12"/>
+      <packagedElement xsi:type="uml:Class" name="P13"/>
+      <packagedElement xsi:type="uml:Class" name="P14"/>
+      <packagedElement xsi:type="uml:Class" name="P15"/>
+      <packagedElement xsi:type="uml:Class" name="P16"/>
+      <packagedElement xsi:type="uml:Class" name="P17"/>
+    </packagedElement>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_TZ_nULU5EduiKqCzJMWbGw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#/"/>
+    </profileApplication>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_fSw28LX7EduFmqQsrNB9lw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#//blocks"/>
+    </profileApplication>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_rpx28LX7EduFmqQsrNB9lw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#//portandflows"/>
+    </profileApplication>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_OOJC4LX8EduFmqQsrNB9lw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#//requirements"/>
+    </profileApplication>
+  </uml:Model>
+  <Requirements:Requirement text="The model must comprise people and buildings." id="P1"
+      base_Class="example/01-isl.sysml.ecore#/0/acs/P1"/>
+  <Requirements:Requirement text="Each person has authorisation to enter certain buildings (and not others). Access to buildings not consigned in this authorization is strictly forbidden. This is a permanent assignment."
+      id="P2" base_Class="example/01-isl.sysml.ecore#/0/acs/P2"/>
+  <Requirements:Requirement text="At any one moment, a person can only be in one building."
+      id="P3" base_Class="example/01-isl.sysml.ecore#/0/acs/P3"/>
+  <Requirements:Requirement text="At any one moment, a person must be in at least one building."
+      id="P4" base_Class="example/01-isl.sysml.ecore#/0/acs/P4"/>
+  <Requirements:Requirement text="Any person in a given building is authorised to be there."
+      id="P5" base_Class="example/01-isl.sysml.ecore#/0/acs/P5"/>
+  <Requirements:Requirement text="The geometry of buildings serves to define which buildings can communicate between each other, and in which direction."
+      id="P6" base_Class="example/01-isl.sysml.ecore#/0/acs/P6"/>
+  <Requirements:Requirement text="A building does not communicate with itself." id="P7"
+      base_Class="example/01-isl.sysml.ecore#/0/acs/P7"/>
+  <Requirements:Requirement text="A person can only go from one building in which he is to another where he desires to go if these two buildings communicate with each other."
+      id="P8" base_Class="example/01-isl.sysml.ecore#/0/acs/P8"/>
+  <Requirements:Requirement text="No persons must remain blocked in the building."
+      id="P9" base_Class="example/01-isl.sysml.ecore#/0/acs/P9"/>
+  <Requirements:Requirement text="Any person authorized to be in a building must also be authorized to go in another building which communicates with the first one."
+      id="P10" base_Class="example/01-isl.sysml.ecore#/0/acs/P10"/>
+  <Requirements:Requirement text="The buildings communicate with each other via doors, which are one-way. We there refer to buildings of origin and destination for each door."
+      id="P11" base_Class="example/01-isl.sysml.ecore#/0/acs/P11"/>
+  <Requirements:Requirement text="A person can only get through a door if it is accepted. A door can only be accepted for one person at a time. Conversely, any person implied in the acceptance of a door cannot do the same of another."
+      id="P12" base_Class="example/01-isl.sysml.ecore#/0/acs/P12"/>
+  <Requirements:Requirement text="For a door to be accepted for a certain person, this person should be inside the building of origin of that door. Moreover, this person should be authorized to enter the destination building of that same door."
+      id="P13" base_Class="example/01-isl.sysml.ecore#/0/acs/P13"/>
+  <Requirements:Requirement text="The green light of a door is lit as long as the latter is accepted. As soon as the person has got through, the door blocks itself again. After 30 seconds, if no-one goes through an accepted door, the latter will block automatically. In both cases, the green light goes off."
+      id="P14" base_Class="example/01-isl.sysml.ecore#/0/acs/P14"/>
+  <Requirements:Requirement text="The red light of a door whose access has just been refused stays on for a period of 2 seconds, the door stays blocked of course."
+      id="P15" base_Class="example/01-isl.sysml.ecore#/0/acs/P15"/>
+  <Requirements:Requirement text="The red and green lights of a door cannot be lit simultaneously."
+      id="P16" base_Class="example/01-isl.sysml.ecore#/0/acs/P16"/>
+  <Requirements:Requirement text="Any person is allowed to go through a door which communicates from the building he is to a building in which he is authorized to go. Morever, this person must not be already engaged with another door."
+      id="P17" base_Class="example/01-isl.sysml.ecore#/0/acs/P17"/>
+</xmi:XMI>

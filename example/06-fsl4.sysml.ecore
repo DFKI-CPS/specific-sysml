@@ -1,0 +1,237 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:Blocks="http://www.eclipse.org/papyrus/0.7.0/SysML/Blocks" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+  <uml:Model name="fsl4">
+    <packageImport importedPackage="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"/>
+    <packagedElement xsi:type="uml:Package" name="acs">
+      <packagedElement xsi:type="uml:Class" name="Building">
+        <ownedRule name="Derive_cc084856" constrainedElement="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Building/gate">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>org_dom.dest->asSet()</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedRule name="Inv_902d35f1" constrainedElement="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Building">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>not (gate->includes(self))</body>
+            <body>self.gate->includes(self).not()</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedAttribute name="gate" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Building"
+            isDerived="true" association="example/06-fsl4.sysml.ecore#/0/A_building_gate">
+          <lowerValue xsi:type="uml:LiteralInteger"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="*"/>
+        </ownedAttribute>
+        <ownedAttribute name="building" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Building"
+            association="example/06-fsl4.sysml.ecore#/0/A_building_gate">
+          <lowerValue xsi:type="uml:LiteralInteger"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="*"/>
+        </ownedAttribute>
+        <ownedAttribute name="org_dom" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Door"
+            association="example/06-fsl4.sysml.ecore#/0/A_org_org_dom">
+          <lowerValue xsi:type="uml:LiteralInteger"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="*"/>
+        </ownedAttribute>
+      </packagedElement>
+      <packagedElement xsi:type="uml:Class" name="Person">
+        <ownedRule name="Inv_27cbc8f6" constrainedElement="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Person/sit">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>self.aut->asSet()->includes(self.sit)</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedRule name="Inv_c30ac2d0" constrainedElement="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Person">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>aut->forAll(b|aut.building->includes(b))</body>
+            <body>self.aut->forAll(b : Building | self.aut->collect(temp1 : Building | temp1.building)->includes(b))</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedRule name="P13a" constrainedElement="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Person">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>sit->includes(dap_dom.org)</body>
+            <body>Set {self.sit}->includes(self.dap_dom.org)</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedRule name="P13b" constrainedElement="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Person">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>aut->includes(dap_dom.dest)</body>
+            <body>self.aut->includes(self.dap_dom.dest)</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedRule name="P12" constrainedElement="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Person">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>Person.allInstances()->
+             forAll(p1, p2 | p1.dap_dom->notEmpty()
+                         and p1.dap_dom = p2.dap_dom
+                     implies p1 = p2)</body>
+            <body>fsl4::acs::Person.allInstances()->forAll(p1 : Person, p2 : Person | Set {p1.dap_dom}->notEmpty().and(p1.dap_dom.=(p2.dap_dom)).implies(p1.=(p2)))</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedAttribute name="aut" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Building">
+          <lowerValue xsi:type="uml:LiteralInteger"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="*"/>
+        </ownedAttribute>
+        <ownedAttribute name="sit" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Building">
+          <lowerValue xsi:type="uml:LiteralInteger" value="1"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute name="dap_dom" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Door"
+            association="example/06-fsl4.sysml.ecore#/0/A_dap_dap_dom">
+          <lowerValue xsi:type="uml:LiteralInteger"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="1"/>
+        </ownedAttribute>
+        <ownedOperation name="admitted" isQuery="true" postcondition="example/06-fsl4.sysml.ecore#/0/acs/Person/admitted/P17">
+          <ownedRule name="P17" constrainedElement="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Person/admitted">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>q.org = sit and
+                aut->includes(q.dest) and
+                dap_dom->isEmpty()</body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+          <ownedParameter name="q" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Door"/>
+          <ownedParameter type="uml:PrimitiveType pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Boolean"
+              direction="return"/>
+        </ownedOperation>
+      </packagedElement>
+      <packagedElement xsi:type="uml:Class" name="Door">
+        <ownedRule name="Derive_4761303e" constrainedElement="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/green">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>dap->notEmpty()</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedRule name="P16" constrainedElement="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Door">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>red &lt;> green</body>
+            <body>self.red.&lt;>(self.green)</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedAttribute name="green" type="uml:PrimitiveType pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Boolean"
+            isDerived="true"/>
+        <ownedAttribute name="red" type="uml:PrimitiveType pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#Boolean"/>
+        <ownedAttribute name="org" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Building"
+            association="example/06-fsl4.sysml.ecore#/0/A_org_org_dom">
+          <lowerValue xsi:type="uml:LiteralInteger" value="1"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute name="dest" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Building">
+          <lowerValue xsi:type="uml:LiteralInteger" value="1"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="1"/>
+        </ownedAttribute>
+        <ownedAttribute name="dap" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Person"
+            association="example/06-fsl4.sysml.ecore#/0/A_dap_dap_dom">
+          <lowerValue xsi:type="uml:LiteralInteger"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="1"/>
+        </ownedAttribute>
+        <ownedBehavior xsi:type="uml:ProtocolStateMachine" name="EnterBehavior">
+          <region name="EnterBehavior">
+            <transition xsi:type="uml:ProtocolTransition" source="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting"
+                target="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Accepting">
+              <trigger name="T_Call_accept" event="uml:CallEvent example/06-fsl4.sysml.ecore#/0/E_Call_accept"/>
+            </transition>
+            <transition source="uml:Pseudostate example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Initial"
+                target="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting"/>
+            <transition xsi:type="uml:ProtocolTransition" source="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Accepting"
+                target="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting">
+              <trigger name="T_Call_off_grn" event="uml:CallEvent example/06-fsl4.sysml.ecore#/0/E_Call_off_grn"/>
+            </transition>
+            <transition xsi:type="uml:ProtocolTransition" source="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Accepting"
+                target="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting">
+              <trigger name="T_Call_pass_thru" event="uml:CallEvent example/06-fsl4.sysml.ecore#/0/E_Call_pass_thru"/>
+            </transition>
+            <subvertex xsi:type="uml:State" name="Waiting"/>
+            <subvertex xsi:type="uml:Pseudostate" name="Initial"/>
+            <subvertex xsi:type="uml:State" name="Accepting"/>
+          </region>
+        </ownedBehavior>
+        <ownedOperation name="accept" postcondition="example/06-fsl4.sysml.ecore#/0/acs/Door/accept/Post_66a0535f"
+            precondition="example/06-fsl4.sysml.ecore#/0/acs/Door/accept/Pre_eaef7e6c example/06-fsl4.sysml.ecore#/0/acs/Door/accept/Pre_8bc9d8d8">
+          <ownedRule name="Pre_eaef7e6c" constrainedElement="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/accept">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>not (green or red)
+      </body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+          <ownedRule name="Pre_8bc9d8d8" constrainedElement="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/accept">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>p.admitted(self)
+      </body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+          <ownedRule name="Post_66a0535f" constrainedElement="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/accept">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>dap = p and p.dap_dom = self</body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+          <ownedParameter name="p" type="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Person"/>
+        </ownedOperation>
+        <ownedOperation name="pass_thru" postcondition="example/06-fsl4.sysml.ecore#/0/acs/Door/pass_thru/Post_930d58c9"
+            precondition="example/06-fsl4.sysml.ecore#/0/acs/Door/pass_thru/Pre_b2773426">
+          <ownedRule name="Pre_b2773426" constrainedElement="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/pass_thru">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>green
+      </body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+          <ownedRule name="Post_930d58c9" constrainedElement="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/pass_thru">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>dap@pre.sit = dest
+        and dap@pre.dap_dom->isEmpty()
+        and dap->isEmpty()</body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+        </ownedOperation>
+        <ownedOperation name="off_grn" postcondition="example/06-fsl4.sysml.ecore#/0/acs/Door/off_grn/Post_1b64663d"
+            precondition="example/06-fsl4.sysml.ecore#/0/acs/Door/off_grn/Pre_b2773426">
+          <ownedRule name="Pre_b2773426" constrainedElement="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/off_grn">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>green
+      </body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+          <ownedRule name="Post_1b64663d" constrainedElement="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/off_grn">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>dap@pre.dap_dom->isEmpty()
+        and dap->isEmpty()</body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+        </ownedOperation>
+      </packagedElement>
+    </packagedElement>
+    <packagedElement xsi:type="uml:Association" name="A_building_gate" memberEnd="example/06-fsl4.sysml.ecore#/0/acs/Building/building example/06-fsl4.sysml.ecore#/0/acs/Building/gate"/>
+    <packagedElement xsi:type="uml:Association" name="A_org_org_dom" memberEnd="example/06-fsl4.sysml.ecore#/0/acs/Door/org example/06-fsl4.sysml.ecore#/0/acs/Building/org_dom"/>
+    <packagedElement xsi:type="uml:Association" name="A_dap_dap_dom" memberEnd="example/06-fsl4.sysml.ecore#/0/acs/Door/dap example/06-fsl4.sysml.ecore#/0/acs/Person/dap_dom"/>
+    <packagedElement xsi:type="uml:CallEvent" name="E_Call_accept" operation="example/06-fsl4.sysml.ecore#/0/acs/Door/accept"/>
+    <packagedElement xsi:type="uml:CallEvent" name="E_Call_off_grn" operation="example/06-fsl4.sysml.ecore#/0/acs/Door/off_grn"/>
+    <packagedElement xsi:type="uml:CallEvent" name="E_Call_pass_thru" operation="example/06-fsl4.sysml.ecore#/0/acs/Door/pass_thru"/>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_TZ_nULU5EduiKqCzJMWbGw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#/"/>
+    </profileApplication>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_fSw28LX7EduFmqQsrNB9lw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#//blocks"/>
+    </profileApplication>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_rpx28LX7EduFmqQsrNB9lw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#//portandflows"/>
+    </profileApplication>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_OOJC4LX8EduFmqQsrNB9lw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#//requirements"/>
+    </profileApplication>
+  </uml:Model>
+  <Blocks:Block base_Class="example/06-fsl4.sysml.ecore#/0/acs/Building"/>
+  <Blocks:Block base_Class="example/06-fsl4.sysml.ecore#/0/acs/Person"/>
+  <Blocks:Block base_Class="example/06-fsl4.sysml.ecore#/0/acs/Door"/>
+</xmi:XMI>

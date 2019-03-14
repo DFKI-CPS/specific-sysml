@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:Blocks="http://www.eclipse.org/papyrus/0.7.0/SysML/Blocks" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+  <uml:Model name="fsl1">
+    <packageImport importedPackage="pathmap://UML_LIBRARIES/UMLPrimitiveTypes.library.uml#_0"/>
+    <packagedElement xsi:type="uml:Package" name="acs">
+      <packagedElement xsi:type="uml:Class" name="Building">
+        <ownedRule name="P7" constrainedElement="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Building">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>not (self.gate->includes(self))</body>
+            <body>self.gate->includes(self).not()</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedAttribute name="gate" type="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Building"
+            association="example/03-fsl1.sysml.ecore#/0/A_building_gate">
+          <lowerValue xsi:type="uml:LiteralInteger"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="*"/>
+        </ownedAttribute>
+        <ownedAttribute name="building" type="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Building"
+            association="example/03-fsl1.sysml.ecore#/0/A_building_gate">
+          <lowerValue xsi:type="uml:LiteralInteger"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="*"/>
+        </ownedAttribute>
+      </packagedElement>
+      <packagedElement xsi:type="uml:Class" name="Person">
+        <ownedRule name="Inv_27cbc8f6" constrainedElement="uml:Property example/03-fsl1.sysml.ecore#/0/acs/Person/sit">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>self.aut->asSet()->includes(self.sit)</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedRule name="P10" constrainedElement="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Person">
+          <specification xsi:type="uml:OpaqueExpression">
+            <body>aut->forAll(b|aut.building->includes(b))</body>
+            <body>self.aut->forAll(b : Building | self.aut->collect(temp1 : Building | temp1.building)->includes(b))</body>
+            <language>OCL</language>
+          </specification>
+        </ownedRule>
+        <ownedAttribute name="aut" type="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Building">
+          <lowerValue xsi:type="uml:LiteralInteger"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="*"/>
+        </ownedAttribute>
+        <ownedAttribute name="sit" type="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Building">
+          <lowerValue xsi:type="uml:LiteralInteger" value="1"/>
+          <upperValue xsi:type="uml:LiteralUnlimitedNatural" value="1"/>
+        </ownedAttribute>
+        <ownedOperation name="pass" postcondition="example/03-fsl1.sysml.ecore#/0/acs/Person/pass/Post_fd0b92fc"
+            precondition="example/03-fsl1.sysml.ecore#/0/acs/Person/pass/Pre_b9ece52c example/03-fsl1.sysml.ecore#/0/acs/Person/pass/P8">
+          <ownedRule name="Pre_b9ece52c" constrainedElement="uml:Operation example/03-fsl1.sysml.ecore#/0/acs/Person/pass">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>aut->includes(b)
+      -- P8: A person can only go from one building in
+      -- which he is to another where he desires to go if
+      -- these two buildings communicate with each other.
+      </body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+          <ownedRule name="P8" constrainedElement="uml:Operation example/03-fsl1.sysml.ecore#/0/acs/Person/pass">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>sit.gate->includes(b)
+      </body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+          <ownedRule name="Post_fd0b92fc" constrainedElement="uml:Operation example/03-fsl1.sysml.ecore#/0/acs/Person/pass">
+            <specification xsi:type="uml:OpaqueExpression">
+              <body>sit = b</body>
+              <language>OCL</language>
+            </specification>
+          </ownedRule>
+          <ownedParameter name="b" type="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Building"/>
+        </ownedOperation>
+      </packagedElement>
+    </packagedElement>
+    <packagedElement xsi:type="uml:Association" name="A_building_gate" memberEnd="example/03-fsl1.sysml.ecore#/0/acs/Building/building example/03-fsl1.sysml.ecore#/0/acs/Building/gate"/>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_TZ_nULU5EduiKqCzJMWbGw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#/"/>
+    </profileApplication>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_fSw28LX7EduFmqQsrNB9lw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#//blocks"/>
+    </profileApplication>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_rpx28LX7EduFmqQsrNB9lw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#//portandflows"/>
+    </profileApplication>
+    <profileApplication appliedProfile="pathmap://SysML_PROFILES/SysML.profile.uml#_OOJC4LX8EduFmqQsrNB9lw">
+      <eAnnotations source="http://www.eclipse.org/uml2/2.0.0/UML" references="http://www.eclipse.org/papyrus/0.7.0/SysML#//requirements"/>
+    </profileApplication>
+  </uml:Model>
+  <Blocks:Block base_Class="example/03-fsl1.sysml.ecore#/0/acs/Building"/>
+  <Blocks:Block base_Class="example/03-fsl1.sysml.ecore#/0/acs/Person"/>
+</xmi:XMI>

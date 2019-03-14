@@ -1,0 +1,770 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xmi:XMI xmi:version="2.0" xmlns:xmi="http://www.omg.org/XMI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:Requirements="http://www.eclipse.org/papyrus/0.7.0/SysML/Requirements" xmlns:uml="http://www.eclipse.org/uml2/5.0.0/UML">
+  <uml:Abstraction client="uml:Class example/02-fsl0.sysml.ecore#/0/acs/Building uml:Class example/02-fsl0.sysml.ecore#/0/acs/Person"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P1"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/0"/>
+  <uml:Abstraction client="uml:Property example/02-fsl0.sysml.ecore#/0/acs/Person/authorized"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P2"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/2"/>
+  <uml:Abstraction client="uml:Property example/02-fsl0.sysml.ecore#/0/acs/Person/current"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P3"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/4"/>
+  <uml:Abstraction client="uml:Property example/02-fsl0.sysml.ecore#/0/acs/Person/current"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P4"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/6"/>
+  <uml:Abstraction client="uml:Property example/02-fsl0.sysml.ecore#/0/acs/Person/current"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P5"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/8"/>
+  <uml:Abstraction client="uml:Property example/03-fsl1.sysml.ecore#/0/acs/Building/gate uml:Property example/03-fsl1.sysml.ecore#/0/acs/Building/building"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P6"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/10"/>
+  <uml:Abstraction client="uml:Constraint example/03-fsl1.sysml.ecore#/0/acs/Building/P7"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P7"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/12"/>
+  <uml:Abstraction client="uml:Constraint example/03-fsl1.sysml.ecore#/0/acs/Person/pass/P8"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P8"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/14"/>
+  <uml:Abstraction client="uml:Class example/01-isl.sysml.ecore#/0/acs/P10" supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P9"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/16"/>
+  <uml:Abstraction client="uml:Constraint example/03-fsl1.sysml.ecore#/0/acs/Person/P10"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P10"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/18"/>
+  <uml:Abstraction client="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Door" supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P11"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/20"/>
+  <uml:Abstraction client="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/dap uml:Property example/06-fsl4.sysml.ecore#/0/acs/Person/dap_dom uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Person/P12"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P12"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/22"/>
+  <uml:Abstraction client="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/accept uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Person/P13a uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Person/P13b"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P13"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/24"/>
+  <uml:Abstraction client="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/green uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/pass_thru uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/off_grn"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P14"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/26"/>
+  <uml:Abstraction client="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Door/off_red"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P15"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/28"/>
+  <uml:Abstraction client="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/P16"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P16"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/30"/>
+  <uml:Abstraction client="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Person/admitted"
+      supplier="uml:Class example/01-isl.sysml.ecore#/0/acs/P17"/>
+  <Requirements:Satisfy base_Abstraction="example/index.sysml.ecore#/32"/>
+  <uml:Realization client="uml:Model example/03-fsl1.sysml.ecore#/0" supplier="uml:Model example/02-fsl0.sysml.ecore#/0"/>
+  <uml:Realization client="uml:Package example/03-fsl1.sysml.ecore#/0/acs" supplier="uml:Package example/02-fsl0.sysml.ecore#/0/acs"/>
+  <uml:Realization client="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Person" supplier="uml:Class example/02-fsl0.sysml.ecore#/0/acs/Person"/>
+  <uml:Realization client="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Building"
+      supplier="uml:Class example/02-fsl0.sysml.ecore#/0/acs/Building"/>
+  <uml:Realization client="uml:Property example/03-fsl1.sysml.ecore#/0/acs/Person/aut"
+      supplier="uml:Property example/02-fsl0.sysml.ecore#/0/acs/Person/authorized">
+    <mapping>
+      <body>aut</body>
+      <language>OCL</language>
+    </mapping>
+  </uml:Realization>
+  <uml:Realization client="uml:Property example/03-fsl1.sysml.ecore#/0/acs/Person/sit"
+      supplier="uml:Property example/02-fsl0.sysml.ecore#/0/acs/Person/current">
+    <mapping>
+      <body>sit</body>
+      <language>OCL</language>
+    </mapping>
+  </uml:Realization>
+  <uml:Realization client="uml:Operation example/03-fsl1.sysml.ecore#/0/acs/Person/pass"
+      supplier="uml:Operation example/02-fsl0.sysml.ecore#/0/acs/Person/pass"/>
+  <uml:Realization client="uml:Parameter example/03-fsl1.sysml.ecore#/0/acs/Person/pass/b"
+      supplier="uml:Parameter example/02-fsl0.sysml.ecore#/0/acs/Person/pass/b"/>
+  <uml:Realization client="uml:Model example/04-fsl2.sysml.ecore#/0" supplier="uml:Model example/03-fsl1.sysml.ecore#/0"/>
+  <uml:Realization client="uml:Package example/04-fsl2.sysml.ecore#/0/acs" supplier="uml:Package example/03-fsl1.sysml.ecore#/0/acs"/>
+  <uml:Realization client="uml:Association example/04-fsl2.sysml.ecore#/0/A_building_gate"
+      supplier="uml:Association example/03-fsl1.sysml.ecore#/0/A_building_gate"/>
+  <uml:Realization client="uml:Class example/04-fsl2.sysml.ecore#/0/acs/Person" supplier="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Person"/>
+  <uml:Realization client="uml:Class example/04-fsl2.sysml.ecore#/0/acs/Building"
+      supplier="uml:Class example/03-fsl1.sysml.ecore#/0/acs/Building"/>
+  <uml:Realization client="uml:Property example/04-fsl2.sysml.ecore#/0/acs/Building/gate"
+      supplier="uml:Property example/03-fsl1.sysml.ecore#/0/acs/Building/gate"/>
+  <uml:Realization client="uml:Property example/04-fsl2.sysml.ecore#/0/acs/Building/building"
+      supplier="uml:Property example/03-fsl1.sysml.ecore#/0/acs/Building/building"/>
+  <uml:Realization client="uml:Operation example/04-fsl2.sysml.ecore#/0/acs/Building/enter"
+      supplier="uml:Operation example/03-fsl1.sysml.ecore#/0/acs/Person/pass">
+    <mapping>
+      <body>b.enter(self)</body>
+      <language>OCL</language>
+    </mapping>
+  </uml:Realization>
+  <uml:Realization client="uml:Property example/04-fsl2.sysml.ecore#/0/acs/Person/aut"
+      supplier="uml:Property example/03-fsl1.sysml.ecore#/0/acs/Person/aut"/>
+  <uml:Realization client="uml:Property example/04-fsl2.sysml.ecore#/0/acs/Person/sit"
+      supplier="uml:Property example/03-fsl1.sysml.ecore#/0/acs/Person/sit"/>
+  <uml:Realization supplier="uml:Parameter example/03-fsl1.sysml.ecore#/0/acs/Person/pass/b">
+    <mapping>
+      <body>self</body>
+      <language>OCL</language>
+    </mapping>
+  </uml:Realization>
+  <uml:Realization client="uml:Model example/05-fsl3.sysml.ecore#/0" supplier="uml:Model example/04-fsl2.sysml.ecore#/0"/>
+  <uml:Realization client="uml:Package example/05-fsl3.sysml.ecore#/0/acs" supplier="uml:Package example/04-fsl2.sysml.ecore#/0/acs"/>
+  <uml:Realization client="uml:Association example/05-fsl3.sysml.ecore#/0/A_building_gate"
+      supplier="uml:Association example/04-fsl2.sysml.ecore#/0/A_building_gate"/>
+  <uml:Realization client="uml:Class example/05-fsl3.sysml.ecore#/0/acs/Building"
+      supplier="uml:Class example/04-fsl2.sysml.ecore#/0/acs/Building"/>
+  <uml:Realization client="uml:Class example/05-fsl3.sysml.ecore#/0/acs/Person" supplier="uml:Class example/04-fsl2.sysml.ecore#/0/acs/Person"/>
+  <uml:Realization client="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Person/aut"
+      supplier="uml:Property example/04-fsl2.sysml.ecore#/0/acs/Person/aut"/>
+  <uml:Realization client="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Person/sit"
+      supplier="uml:Property example/04-fsl2.sysml.ecore#/0/acs/Person/sit"/>
+  <uml:Realization client="uml:Operation example/05-fsl3.sysml.ecore#/0/acs/Door/enter"
+      supplier="uml:Operation example/04-fsl2.sysml.ecore#/0/acs/Building/enter">
+    <mapping>
+      <body>org_dom->select(d|d.org = p.sit).enter(p)</body>
+      <language>OCL</language>
+    </mapping>
+  </uml:Realization>
+  <uml:Realization client="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Building/building"
+      supplier="uml:Property example/04-fsl2.sysml.ecore#/0/acs/Building/building"/>
+  <uml:Realization client="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Building/gate"
+      supplier="uml:Property example/04-fsl2.sysml.ecore#/0/acs/Building/gate"/>
+  <uml:Realization client="uml:Model example/06-fsl4.sysml.ecore#/0" supplier="uml:Model example/05-fsl3.sysml.ecore#/0"/>
+  <uml:Realization client="uml:Package example/06-fsl4.sysml.ecore#/0/acs" supplier="uml:Package example/05-fsl3.sysml.ecore#/0/acs"/>
+  <uml:Realization client="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Building"
+      supplier="uml:Class example/05-fsl3.sysml.ecore#/0/acs/Building"/>
+  <uml:Realization client="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Building/gate"
+      supplier="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Building/gate"/>
+  <uml:Realization client="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Building/building"
+      supplier="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Building/building"/>
+  <uml:Realization client="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Building/org_dom"
+      supplier="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Building/org_dom"/>
+  <uml:Realization client="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Person" supplier="uml:Class example/05-fsl3.sysml.ecore#/0/acs/Person"/>
+  <uml:Realization client="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Person/aut"
+      supplier="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Person/aut"/>
+  <uml:Realization client="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Person/sit"
+      supplier="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Person/sit"/>
+  <uml:Realization client="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Door" supplier="uml:Class example/05-fsl3.sysml.ecore#/0/acs/Door"/>
+  <uml:Realization client="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/org"
+      supplier="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Door/org"/>
+  <uml:Realization client="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/dest"
+      supplier="uml:Property example/05-fsl3.sysml.ecore#/0/acs/Door/dest"/>
+  <uml:Realization client="uml:ProtocolStateMachine example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior"
+      supplier="uml:ProtocolStateMachine example/05-fsl3.sysml.ecore#/0/acs/Door/EnterBehavior"/>
+  <uml:Realization client="uml:Region example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior"
+      supplier="uml:Region example/05-fsl3.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior"/>
+  <uml:Realization client="uml:ProtocolTransition example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:ProtocolTransition example/05-fsl3.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"/>
+  <uml:Realization client="uml:ProtocolTransition example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:Transition example/05-fsl3.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.1"/>
+  <uml:Realization client="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting"
+      supplier="uml:State example/05-fsl3.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting"/>
+  <uml:Realization client="uml:Pseudostate example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Initial"
+      supplier="uml:Pseudostate example/05-fsl3.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Initial"/>
+  <uml:Realization client="uml:Association example/06-fsl4.sysml.ecore#/0/A_building_gate"
+      supplier="uml:Association example/05-fsl3.sysml.ecore#/0/A_building_gate"/>
+  <uml:Realization client="uml:Association example/06-fsl4.sysml.ecore#/0/A_org_org_dom"
+      supplier="uml:Association example/05-fsl3.sysml.ecore#/0/A_org_org_dom"/>
+  <uml:Realization client="uml:Model example/07-fsl5.sysml.ecore#/0" supplier="uml:Model example/06-fsl4.sysml.ecore#/0"/>
+  <uml:Realization client="uml:Package example/07-fsl5.sysml.ecore#/0/acs" supplier="uml:Package example/06-fsl4.sysml.ecore#/0/acs"/>
+  <uml:Realization client="uml:Class example/07-fsl5.sysml.ecore#/0/acs/Building"
+      supplier="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Building"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Building/gate"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Building/gate"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Building/building"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Building/building"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Building/org_dom"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Building/org_dom"/>
+  <uml:Realization client="uml:Class example/07-fsl5.sysml.ecore#/0/acs/Person" supplier="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Person"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Person/aut"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Person/aut"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Person/sit"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Person/sit"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Person/dap_dom"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Person/dap_dom"/>
+  <uml:Realization client="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Person/admitted"
+      supplier="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Person/admitted"/>
+  <uml:Realization client="uml:Parameter example/07-fsl5.sysml.ecore#/0/acs/Person/admitted/q"
+      supplier="uml:Parameter example/06-fsl4.sysml.ecore#/0/acs/Person/admitted/q"/>
+  <uml:Realization client="uml:Parameter example/07-fsl5.sysml.ecore#/0/acs/Person/admitted/@ownedParameter.1"
+      supplier="uml:Parameter example/06-fsl4.sysml.ecore#/0/acs/Person/admitted/@ownedParameter.1"/>
+  <uml:Realization client="uml:Class example/07-fsl5.sysml.ecore#/0/acs/Door" supplier="uml:Class example/06-fsl4.sysml.ecore#/0/acs/Door"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/green"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/green"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/red"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/red"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/org"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/org"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/dest"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/dest"/>
+  <uml:Realization client="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/dap"
+      supplier="uml:Property example/06-fsl4.sysml.ecore#/0/acs/Door/dap"/>
+  <uml:Realization client="uml:ProtocolStateMachine example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior"
+      supplier="uml:ProtocolStateMachine example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior"/>
+  <uml:Realization client="uml:Region example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior"
+      supplier="uml:Region example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior"/>
+  <uml:Realization client="uml:ProtocolTransition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:ProtocolTransition example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"/>
+  <uml:Realization client="uml:ProtocolTransition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:Transition example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.1"/>
+  <uml:Realization client="uml:ProtocolTransition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:ProtocolTransition example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.2"/>
+  <uml:Realization client="uml:ProtocolTransition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:ProtocolTransition example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.3"/>
+  <uml:Realization client="uml:State example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting"
+      supplier="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting"/>
+  <uml:Realization client="uml:Pseudostate example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Initial"
+      supplier="uml:Pseudostate example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Initial"/>
+  <uml:Realization client="uml:State example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Accepting"
+      supplier="uml:State example/06-fsl4.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Accepting"/>
+  <uml:Realization client="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Door/accept"
+      supplier="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/accept"/>
+  <uml:Realization client="uml:Parameter example/07-fsl5.sysml.ecore#/0/acs/Door/accept/p"
+      supplier="uml:Parameter example/06-fsl4.sysml.ecore#/0/acs/Door/accept/p"/>
+  <uml:Realization client="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Door/pass_thru"
+      supplier="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/pass_thru"/>
+  <uml:Realization client="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Door/off_grn"
+      supplier="uml:Operation example/06-fsl4.sysml.ecore#/0/acs/Door/off_grn"/>
+  <uml:Realization client="uml:Association example/07-fsl5.sysml.ecore#/0/A_building_gate"
+      supplier="uml:Association example/06-fsl4.sysml.ecore#/0/A_building_gate"/>
+  <uml:Realization client="uml:Association example/07-fsl5.sysml.ecore#/0/A_org_org_dom"
+      supplier="uml:Association example/06-fsl4.sysml.ecore#/0/A_org_org_dom"/>
+  <uml:Realization client="uml:Association example/07-fsl5.sysml.ecore#/0/A_dap_dap_dom"
+      supplier="uml:Association example/06-fsl4.sysml.ecore#/0/A_dap_dap_dom"/>
+  <uml:Realization client="uml:Model example/08-fsl6.sysml.ecore#/0" supplier="uml:Model example/07-fsl5.sysml.ecore#/0"/>
+  <uml:Realization client="uml:Package example/08-fsl6.sysml.ecore#/0/acs" supplier="uml:Package example/07-fsl5.sysml.ecore#/0/acs"/>
+  <uml:Realization client="uml:Association example/08-fsl6.sysml.ecore#/0/A_building_gate"
+      supplier="uml:Association example/07-fsl5.sysml.ecore#/0/A_building_gate"/>
+  <uml:Realization client="uml:Association example/08-fsl6.sysml.ecore#/0/A_org_org_dom"
+      supplier="uml:Association example/07-fsl5.sysml.ecore#/0/A_org_org_dom"/>
+  <uml:Realization client="uml:Association example/08-fsl6.sysml.ecore#/0/A_dap_dap_dom"
+      supplier="uml:Association example/07-fsl5.sysml.ecore#/0/A_dap_dap_dom"/>
+  <uml:Realization client="uml:Class example/08-fsl6.sysml.ecore#/0/acs/Door" supplier="uml:Class example/07-fsl5.sysml.ecore#/0/acs/Door"/>
+  <uml:Realization client="uml:Class example/08-fsl6.sysml.ecore#/0/acs/Building"
+      supplier="uml:Class example/07-fsl5.sysml.ecore#/0/acs/Building"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Building/gate"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Building/gate"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Building/building"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Building/building"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Building/org_dom"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Building/org_dom"/>
+  <uml:Realization client="uml:Class example/08-fsl6.sysml.ecore#/0/acs/Person" supplier="uml:Class example/07-fsl5.sysml.ecore#/0/acs/Person"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Person/aut"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Person/aut"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Person/sit"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Person/sit"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Person/dap_dom"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Person/dap_dom"/>
+  <uml:Realization client="uml:Operation example/08-fsl6.sysml.ecore#/0/acs/Person/admitted"
+      supplier="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Person/admitted"/>
+  <uml:Realization client="uml:Parameter example/08-fsl6.sysml.ecore#/0/acs/Person/admitted/q"
+      supplier="uml:Parameter example/07-fsl5.sysml.ecore#/0/acs/Person/admitted/q"/>
+  <uml:Realization client="uml:Parameter example/08-fsl6.sysml.ecore#/0/acs/Person/admitted/@ownedParameter.1"
+      supplier="uml:Parameter example/07-fsl5.sysml.ecore#/0/acs/Person/admitted/@ownedParameter.1"/>
+  <uml:Realization client="uml:Operation example/08-fsl6.sysml.ecore#/0/acs/Door/accept"
+      supplier="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Door/accept">
+    <mapping>
+      <body>accept()</body>
+      <language>OCL</language>
+    </mapping>
+  </uml:Realization>
+  <uml:Realization client="uml:Operation example/08-fsl6.sysml.ecore#/0/acs/Door/refuse"
+      supplier="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Door/refuse">
+    <mapping>
+      <body>refuse()</body>
+      <language>OCL</language>
+    </mapping>
+  </uml:Realization>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Door/green"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/green"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Door/red"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/red"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Door/org"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/org"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Door/dest"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/dest"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Door/dap"
+      supplier="uml:Property example/07-fsl5.sysml.ecore#/0/acs/Door/dap"/>
+  <uml:Realization client="uml:ProtocolStateMachine example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior"
+      supplier="uml:ProtocolStateMachine example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior"/>
+  <uml:Realization client="uml:Region example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior"
+      supplier="uml:Region example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior"/>
+  <uml:Realization client="uml:ProtocolTransition example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:ProtocolTransition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"/>
+  <uml:Realization client="uml:ProtocolTransition example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:ProtocolTransition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.1"/>
+  <uml:Realization client="uml:ProtocolTransition example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:Transition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.2"/>
+  <uml:Realization client="uml:ProtocolTransition example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:ProtocolTransition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.3"/>
+  <uml:Realization client="uml:ProtocolTransition example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:ProtocolTransition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.4"/>
+  <uml:Realization client="uml:ProtocolTransition example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.0"
+      supplier="uml:ProtocolTransition example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/@transition.5"/>
+  <uml:Realization client="uml:State example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting"
+      supplier="uml:State example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Waiting"/>
+  <uml:Realization client="uml:Pseudostate example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Initial"
+      supplier="uml:Pseudostate example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Initial"/>
+  <uml:Realization client="uml:State example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Accepting"
+      supplier="uml:State example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Accepting"/>
+  <uml:Realization client="uml:State example/08-fsl6.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Refusing"
+      supplier="uml:State example/07-fsl5.sysml.ecore#/0/acs/Door/EnterBehavior/EnterBehavior/Refusing"/>
+  <uml:Realization client="uml:Operation example/08-fsl6.sysml.ecore#/0/acs/Door/pass_thru"
+      supplier="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Door/pass_thru"/>
+  <uml:Realization client="uml:Operation example/08-fsl6.sysml.ecore#/0/acs/Door/off_grn"
+      supplier="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Door/off_grn"/>
+  <uml:Realization client="uml:Operation example/08-fsl6.sysml.ecore#/0/acs/Door/off_red"
+      supplier="uml:Operation example/07-fsl5.sysml.ecore#/0/acs/Door/off_red"/>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Door/dap"
+      supplier="uml:Parameter example/07-fsl5.sysml.ecore#/0/acs/Door/accept/p">
+    <mapping>
+      <body>self.dap</body>
+      <language>OCL</language>
+    </mapping>
+  </uml:Realization>
+  <uml:Realization client="uml:Property example/08-fsl6.sysml.ecore#/0/acs/Door/dap"
+      supplier="uml:Parameter example/07-fsl5.sysml.ecore#/0/acs/Door/refuse/p">
+    <mapping>
+      <body>self.dap</body>
+      <language>OCL</language>
+    </mapping>
+  </uml:Realization>
+  <uml:Constraint constrainedElement="uml:Constraint example/02-fsl0.sysml.ecore#/0/acs/Person/Inv_7a0bfa16">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->asSet()->includes(self.sit)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/02-fsl0.sysml.ecore#/0/acs/Person/pass/Pre_62657c7e">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.sit.&lt;>(b)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/02-fsl0.sysml.ecore#/0/acs/Person/pass/Post_a3bdce17">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.sit.=(b)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/03-fsl1.sysml.ecore#/0/acs/Building/P7">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.gate->includes(self).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/03-fsl1.sysml.ecore#/0/acs/Person/Inv_27cbc8f6">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->asSet()->includes(self.sit)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/03-fsl1.sysml.ecore#/0/acs/Person/P10">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->forAll(b : Building | self.aut->collect(temp1 : Building | temp1.building)->includes(b))</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/03-fsl1.sysml.ecore#/0/acs/Person/pass/Pre_b9ece52c">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.aut->includes(self)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/03-fsl1.sysml.ecore#/0/acs/Person/pass/P8">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.sit.gate->includes(self)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/03-fsl1.sysml.ecore#/0/acs/Person/pass/Post_fd0b92fc">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.sit.=(self)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/04-fsl2.sysml.ecore#/0/acs/Building/enter/Pre_d2fe5156">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.aut->includes(self.org)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/04-fsl2.sysml.ecore#/0/acs/Building/enter/P8">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.sit.gate->includes(self.org)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/04-fsl2.sysml.ecore#/0/acs/Building/enter/Post_44bfeb0e">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.sit.=(self.org)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/04-fsl2.sysml.ecore#/0/acs/Person/Inv_27cbc8f6">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->asSet()->includes(self.sit)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/05-fsl3.sysml.ecore#/0/acs/Building/Inv_902d35f1">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.gate->includes(self).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/05-fsl3.sysml.ecore#/0/acs/Person/Inv_27cbc8f6">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->asSet()->includes(self.sit)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/05-fsl3.sysml.ecore#/0/acs/Person/Inv_c30ac2d0">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->forAll(b : Building | self.aut->collect(temp1 : Building | temp1.building)->includes(b))</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/05-fsl3.sysml.ecore#/0/acs/Door/enter/Pre_ff593a8c">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.aut->includes(self.dest)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/05-fsl3.sysml.ecore#/0/acs/Door/enter/Pre_cffee2a8">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.sit.=(self.org)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/05-fsl3.sysml.ecore#/0/acs/Door/enter/Post_44b91a64">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.sit.=(self.dest)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Building/Inv_902d35f1">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.gate->includes(self).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Person/Inv_27cbc8f6">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->asSet()->includes(self.sit)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Person/Inv_c30ac2d0">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->forAll(b : Building | self.aut->collect(temp1 : Building | temp1.building)->includes(b))</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Person/P13a">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>Set {self.sit}->includes(self.dap_dom.org)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Person/P13b">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->includes(self.dap_dom.dest)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Person/P12">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>fsl4::acs::Person.allInstances()->forAll(p1 : Person, p2 : Person | Set {p1.dap_dom}->notEmpty().and(p1.dap_dom.=(p2.dap_dom)).implies(p1.=(p2)))</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Person/admitted/P17">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>q.org.=(self.sit).and(self.aut->includes(q.dest)).and(Set {self.dap_dom}->isEmpty())</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/Derive_4761303e">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>Set {self.dap}->notEmpty()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/P16">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.red.&lt;>(self.green)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/accept/Pre_eaef7e6c">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green.or(self.red).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/accept/Pre_8bc9d8d8">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>p.admitted(self)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/accept/Post_66a0535f">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap.=(p).and(p.dap_dom.=(self))</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/pass_thru/Pre_b2773426">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/pass_thru/Post_930d58c9">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap@pre.sit.=(self.dest).and(Set {self.dap@pre.dap_dom}->isEmpty()).and(Set {self.dap}->isEmpty())</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/off_grn/Pre_b2773426">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/06-fsl4.sysml.ecore#/0/acs/Door/off_grn/Post_1b64663d">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>Set {self.dap@pre.dap_dom}->isEmpty().and(Set {self.dap}->isEmpty())</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Building/Inv_6f3f59a8">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.gate->includes(self).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Person/Inv_27cbc8f6">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->asSet()->includes(self.sit)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Person/Inv_22f574a0">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->forAll(b : Building | self.aut->collect(temp1 : Building | temp1.building)->includes(b))</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Person/Inv_d86ea882">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->includes(self.dap_dom.dest)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Person/Inv_40574faa">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>Set {self.sit}->includes(self.dap_dom.org)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Person/Inv_ec4f362c">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>fsl5::acs::Person.allInstances()->forAll(p1 : Person, p2 : Person | Set {p1.dap_dom}->notEmpty().and(p1.dap_dom.=(p2.dap_dom)).implies(p1.=(p2)))</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Person/admitted/Post_4fea2642">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>q.org.=(self.sit).and(self.aut->includes(q.dest)).and(Set {self.dap_dom}->isEmpty())</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/Derive_4761303e">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>Set {self.dap}->notEmpty()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/P16">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.red.&lt;>(self.green)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/accept/Pre_eaef7e6c">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green.or(self.red).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/accept/Pre_8bc9d8d8">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap.admitted(self)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/accept/Post_66a0535f">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap.=().and(self.dap.dap_dom.=(self))</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/refuse/Pre_eaef7e6c">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green.or(self.red).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/refuse/Pre_fc54feec">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap.admitted(self).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/refuse/Post_8001b890">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.red</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/pass_thru/Pre_b2773426">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/pass_thru/Post_930d58c9">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap@pre.sit.=(self.dest).and(Set {self.dap@pre.dap_dom}->isEmpty()).and(Set {self.dap}->isEmpty())</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/off_grn/Pre_b2773426">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/off_grn/Post_1b64663d">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>Set {self.dap@pre.dap_dom}->isEmpty().and(Set {self.dap}->isEmpty())</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/07-fsl5.sysml.ecore#/0/acs/Door/off_red/Post_feca4dc3">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.red.not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Building/Inv_6f3f59a8">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.gate->includes(self).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Person/Inv_27cbc8f6">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->asSet()->includes(self.sit)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Person/Inv_c30ac2d0">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->forAll(b : Building | self.aut->collect(temp1 : Building | temp1.building)->includes(b))</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Person/Inv_d86ea882">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.aut->includes(self.dap_dom.dest)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Person/Inv_40574faa">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>Set {self.sit}->includes(self.dap_dom.org)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Person/admitted/P17">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>q.org.=(self.sit).and(self.aut->includes(q.dest)).and(Set {self.dap_dom}->isEmpty())</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/Derive_4761303e">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>Set {self.dap}->notEmpty()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/P16">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.red.&lt;>(self.green)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/accept/Pre_eaef7e6c">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green.or(self.red).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/accept/Pre_ab3f0fbb">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap.admitted(self)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/accept/Post_df8ab5d3">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap.dap_dom.=(self)</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/refuse/Pre_eaef7e6c">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green.or(self.red).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/refuse/Pre_a1b6cae">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap.admitted(self).not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/refuse/Post_8001b890">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.red</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/pass_thru/Pre_b2773426">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/pass_thru/Post_930d58c9">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.dap@pre.sit.=(self.dest).and(Set {self.dap@pre.dap_dom}->isEmpty()).and(Set {self.dap}->isEmpty())</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/off_grn/Pre_b2773426">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.green</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/off_grn/Post_1b64663d">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>Set {self.dap@pre.dap_dom}->isEmpty().and(Set {self.dap}->isEmpty())</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+  <uml:Constraint constrainedElement="uml:Constraint example/08-fsl6.sysml.ecore#/0/acs/Door/off_red/Post_feca4dc3">
+    <specification xsi:type="uml:OpaqueExpression">
+      <body>self.red.not()</body>
+      <language>OCL</language>
+    </specification>
+  </uml:Constraint>
+</xmi:XMI>
