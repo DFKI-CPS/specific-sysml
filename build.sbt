@@ -1,14 +1,14 @@
 organization := "de.dfki.cps"
 name := "specific-sysml"
 version := "0.2.11"
-scalaVersion := "2.11.8"
-scalaVersion in ThisBuild := "2.11.8"
+scalaVersion := "2.12.8"
+scalaVersion in ThisBuild := "2.12.8"
 licenses += ("MIT", url("http://opensource.org/licenses/MIT"))
 bintrayOrganization := Some("dfki-cps")
 
 scalacOptions := Seq("-deprecation")
 
-crossScalaVersions := Seq("2.11.8","2.12.1")
+crossScalaVersions := Seq("2.11.12","2.12.8")
 
 resolvers += Resolver.bintrayRepo("dfki-cps", "maven")
 
