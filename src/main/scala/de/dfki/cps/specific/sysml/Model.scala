@@ -5,8 +5,6 @@ import scala.concurrent.duration.Duration
 import scala.util.parsing.input.{Positional}
 
 
-
-
 sealed abstract class DiagramKind(abbrev: String) {
   override def toString: String = abbrev
 }
@@ -107,7 +105,7 @@ case class Reference(
     isComposite: Boolean,
     oppositeName: Option[String],
     properties: Seq[ReferenceProperty],
-    constraints: Seq[UnprocessedConstraint]) extends BlockMember with TypedElement {
+    constraints: Seq[UnprocessedConstraint]) extends BlockMember with TypedEPlement {
   override def toString: String = s"<<reference>> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
   def isMany = typeAnnotation.isMany
 }

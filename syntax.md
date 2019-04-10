@@ -1,0 +1,16 @@
+Positional = Filepositinal | TypeAnnotation | TimeEvent 
+FilePostional = Element
+Element =  Comment | Mapping | Satifsfy | Trace | Project | BlockCompartment | TransistionTarget | Trigger | 
+BlockCompatement = UnsupportedCompartment | PropertiesCompartment |  ValuesCompartment | OperationsCompartment | ReferencesCompartment | PortsCompartment | BehaviorCompartment | ConstraintsCompartment
+DiagramKind = ActivityDiagram | BlockDefinitionDiagram | InternalBlockDiagram | InternalBlockDiagram | ParametricDiagram | RequirementDiagram | SequenceDiagram | StateMachineDiagram |  UseCaseDiagram
+NameSpace = Diagram | Package 
+NamedElement = Realiziation | BlockMember | State | Requirement | State
+BlockMember = Property | Reference | Operation | Parameter | Port | StateMachine
+Classifier = Block
+ConstraintType = Inv | Pre | Post | Body | Init | Derive | Query
+Blockmember = UnprocessedConstraint
+FlowDirection = In | Out | InOut
+State = PseudoState
+PseudoState = Choice
+TransistionTarget = InlineTargetState | UnresolvedTargetStateName
+ShortConstraint = Subsets
