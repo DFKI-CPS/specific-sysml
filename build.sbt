@@ -19,3 +19,6 @@ libraryDependencies ++= Seq(
 )
 
 enablePlugins(JavaAppPackaging)
+
+// JSON Library
+libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"
