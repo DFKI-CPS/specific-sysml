@@ -105,7 +105,7 @@ case class Reference(
     isComposite: Boolean,
     oppositeName: Option[String],
     properties: Seq[ReferenceProperty],
-    constraints: Seq[UnprocessedConstraint]) extends BlockMember with TypedEPlement {
+    constraints: Seq[UnprocessedConstraint]) extends BlockMember with TypedElement {
   override def toString: String = s"<<reference>> $name$typeAnnotation" + oppositeName.map(x =>s" <- $x").getOrElse("")
   def isMany = typeAnnotation.isMany
 }

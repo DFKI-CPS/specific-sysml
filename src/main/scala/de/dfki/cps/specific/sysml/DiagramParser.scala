@@ -3,7 +3,6 @@ package de.dfki.cps.specific.sysml
 import java.io.File
 
 import org.eclipse.emf.ecore.resource.Resource
-import de.dfki.cps.specific.sysml._
 import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
 
 import scala.io.Source
@@ -25,5 +24,7 @@ object DiagramParser extends App {
         target.getErrors.add(SemanticMessage(source.toString,i.pos,msg,None))
         Map.empty
     }
+
+    // tokens.toJson.prettyPrint  // Das ist leider zu einfach und falsch
   }
 }
