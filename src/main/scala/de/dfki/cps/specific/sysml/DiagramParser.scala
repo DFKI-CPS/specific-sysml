@@ -2,7 +2,6 @@ package de.dfki.cps.specific.sysml
 
 import java.io.File
 
-import org.eclipse.emf.ecore.resource.Resource
 import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
 
 import scala.io.Source
