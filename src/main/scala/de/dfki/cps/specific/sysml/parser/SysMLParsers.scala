@@ -121,7 +121,7 @@ object SysMLParsers extends OclParsers {
     | "classifier" ~ "bahavior") ~> indented(stateMachine, "state machine") ^^ BehaviorCompartment
 
   def constraintsCompartment: Parser[ConstraintsCompartment] =
-    "constraints" ~> indented(constraint(ConstraintType.Inv), "constraint") ^^ ConstraintsCompartment
+    "constraints" ~> indented(blockConstraint, "constraint") ^^ ConstraintsCompartment
 
   def stateMachine: Parser[StateMachine] =
     ("state" ~ "machine") ~> name ~ opt(REALIZATION ~> name) ~ indented(state, "state") ^^ { case n~r~ss => StateMachine(n.name,ss,r.map(_.name)).at(n) }
@@ -278,6 +278,14 @@ object SysMLParsers extends OclParsers {
     res.pos = start
     Success(res,r)
   }
+
+  def blockConstraint: Parser[UnprocessedConstraint] =
+    ((INV ~> opt(simpleName)) <~ COLON) >> { n =>
+      ignoreIndentation(captureConstraint(ConstraintType.Inv, n, allExcept(INV, DEDENT, SEPARATOR).*))
+    } |
+    ((DEF ~> opt(simpleName)) <~ COLON) >> { n =>
+      ignoreIndentation(captureConstraint(ConstraintType.Define, n, allExcept(INV, DEDENT, SEPARATOR).*))
+    }
 
   def constraint(tpe: ConstraintType): Parser[UnprocessedConstraint] =
     ((INV ~> opt(simpleName)) <~ COLON) >> { n =>

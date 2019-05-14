@@ -71,6 +71,7 @@ object ConstraintType {
   case object Init extends ConstraintType
   case object Derive extends ConstraintType
   case object Query extends ConstraintType
+  case object Define extends ConstraintType
 }
 
 case class UnprocessedConstraint(tpe: ConstraintType, constraintName: Option[SimpleName], content: String) extends BlockMember {

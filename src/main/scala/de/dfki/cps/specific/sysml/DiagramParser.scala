@@ -41,11 +41,11 @@ object DiagramParser extends App {
     SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
       case SysMLParsers.Success(b: Diagram,_) =>
         println(convert(b).prettyPrint)
-      case SysMLParsers.NoSuccess(msg,i) =>
-        println(s"parse error: $msg")
-
+      case err@ SysMLParsers.NoSuccess(msg,i) =>
+        println(s"parse error [${source.getName}:${i.pos.line}:${i.pos.column}]: $msg")
+        println(i.pos.longString)
     }
   }
 
-  load(new File("example/02-fsl0.sysml"))
+  load(new File("example.sysml"))
 }

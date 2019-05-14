@@ -20,16 +20,14 @@ block Door
       post: card.location = to  
   constraints
     def: mayPass(card: Card): Boolean = 
-      isOpen or
-        card.location = from and 
-        card.authorizations->contains(to)
+           isOpen or card.location = from and card.authorizations->contains(to)
     inv: from.building = to.building
     inv: isOpen implies from.building.emergency
 
 block Card
   references
     authorizations: Room[*] <- authorized
-    location: Room[1] <- checkedIn { subsets authorizations }
+    location: Room[1] { subsets authorizations } <- checkedIn 
     building: Building[1] <- cards
   constraints
     inv: authorizations->forall(r| r.building = self.building)
@@ -42,10 +40,9 @@ block Room
     exits: Door[*] <- in
     entries: Door[*] <- out
     authorized: Card[*] <- authorizations
-    checkedIn: Card[*] <- location { subsets authorized }
+    checkedIn: Card[*] { subsets authorized } <- location 
   values
     isSafe: Boolean  
   constraints
     def: hasAccess(card: Card): Boolean = 
-      card.location = self or 
-      entries->exists(e | e.mayPass(card) and e.from.hasAccess(card))    
+           card.location = self or entries->exists(e | e.mayPass(card) and e.from.hasAccess(card))    
