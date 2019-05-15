@@ -13,7 +13,7 @@ object DiagramParser extends App {
   def convert(element: NamedElement): JsValue = element match {
     case Diagram(DiagramKind.BlockDefinitionDiagram,m,n,name,members) =>
       Map(
-        "title" -> Array("Block Definition Diagram", s"[${m}]", n.mkString("::"), name).toJson,
+        "title" -> Array("Block Definition Diagram", s"[$m]", n.mkString("::"), name).toJson,
         "blocks" -> members.collect {
           case Block(name,compartments,comments) =>
             name -> Map(
@@ -44,18 +44,24 @@ object DiagramParser extends App {
     case default => default.toString.toJson
   }
 
-  def load(source: File): Unit = {
+  /**
+    * Take a .sysml file and return its json representation
+    * @param source Specify where a .sysml file is saved
+    * @return  returns the prettyprinted json representation
+    */
+  def fileToJsonString(source: File): String = {
     val textSource = Source.fromFile(source)
-    val tokens = new IndentScanner(new SysMLLexer.Scanner(textSource.mkString))
+    val tokens = IndentScanner(new SysMLLexer.Scanner(textSource.mkString))
 
     SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
       case SysMLParsers.Success(b: Diagram,_) =>
-        println("diagram = " + convert(b).prettyPrint)
+        convert(b).prettyPrint
       case err@ SysMLParsers.NoSuccess(msg,i) =>
-        println(s"parse error [${source.getName}:${i.pos.line}:${i.pos.column}]: $msg")
-        println(i.pos.longString)
+        s"parse error [${source.getName}:${i.pos.line}:${i.pos.column}]: $msg"
+        i.pos.longString
     }
   }
 
-  load(new File("example.sysml"))
+  println("diagram = " + fileToJsonString(new File("example.sysml")))
+
 }
