@@ -10,6 +10,32 @@ import DefaultJsonProtocol._
 
 
 object DiagramParser extends App {
+  /**
+    * Converts from the SysML parser to json
+    * Uses following Grammar:
+    *
+    * Positional = Filepositinal | TypeAnnotation | TimeEvent
+    * FilePostional = Element
+    * Element =  Comment | Mapping | Satifsfy | Trace | Project | BlockCompartment | TransistionTarget | Trigger |
+    * BlockCompatement = UnsupportedCompartment | PropertiesCompartment |  ValuesCompartment | OperationsCompartment
+    *                    BehaviorCompartment | ConstraintsCompartment | ReferencesCompartment | PortsCompartment |
+    * DiagramKind = ActivityDiagram | BlockDefinitionDiagram | InternalBlockDiagram | InternalBlockDiagram | ParametricDiagram | RequirementDiagram |
+    *               SequenceDiagram | StateMachineDiagram |  UseCaseDiagram
+    * NameSpace = Diagram | Package
+    * NamedElement = Realization | BlockMember | State | Requirement | State
+    * BlockMember = Property | Reference | Operation | Parameter | Port | StateMachine
+    * Classifier = Block
+    * ConstraintType = Inv | Pre | Post | Body | Init | Derive | Query
+    * Blockmember = UnprocessedConstraint
+    * FlowDirection = In | Out | InOut
+    * State = PseudoState
+    * PseudoState = Choice
+    * TransistionTarget = InlineTargetState | UnresolvedTargetStateName
+    * ShortConstraint = Subsets
+    *
+    * @param element Takes a Diagram from the Parser
+    * @return the json representation
+    */
   def convert(element: NamedElement): JsValue = element match {
     case Diagram(DiagramKind.BlockDefinitionDiagram,m,n,name,members) =>
       Map(
@@ -19,7 +45,14 @@ object DiagramParser extends App {
             name -> Map(
               "stereotype" -> "block".toJson,
               "compartments" -> compartments.collect {
-                case comp if comp.compartmentName != "references" => comp.compartmentName -> comp.content.map(convert).toJson
+                case comp if ((comp.compartmentName != "references") && (comp.compartmentName != "operations") || (comp.compartmentName != "constraints"))
+                      => comp.compartmentName -> comp.content.map(convert).toJson
+                // Warum nehmen wir alles ausser referenzen
+                case comp if (comp.compartmentName == "operations") => comp.compartmentName -> Map(     // Dieser Case wird leider nicht erreicht
+                 "Operation" -> name.toJson,
+                 "Parameters" -> "ToDo: read parameters".toJson
+                ).toJson
+                case comp if (comp.compartmentName == "constraints") => comp.compartmentName -> comp.content.map(convert).toJson
               }.toMap.toJson
             ).toJson
         }.toMap.toJson,
@@ -27,7 +60,8 @@ object DiagramParser extends App {
           val refs = from.compartments.collect { case r: ReferencesCompartment => r }.flatMap(r => r.references)
           refs.map(to => {
             val c = to.typeAnnotation.name.parts.mkString("::")
-            val opposite = to.oppositeName.flatMap(n => members.collect { case b: Block if b.rawName == c => b }.flatMap(_.members.collect{ case r: Reference if r.name == n => r  }).headOption)
+            val opposite = to.oppositeName.flatMap(n => members.collect { case b: Block if b.rawName == c => b }
+                             .flatMap(_.members.collect{ case r: Reference if r.name == n => r  }).headOption)
             Map(
               "from" -> from.rawName.toJson,
               "to" -> c.toJson,
@@ -46,22 +80,23 @@ object DiagramParser extends App {
 
   /**
     * Take a .sysml file and return its json representation
+    * Use SysMLParsers, if successful convert to json
     * @param source Specify where a .sysml file is saved
     * @return  returns the prettyprinted json representation
     */
   def fileToJsonString(source: File): String = {
+    // Read from File and run SysML Lexer
     val textSource = Source.fromFile(source)
     val tokens = IndentScanner(new SysMLLexer.Scanner(textSource.mkString))
+
 
     SysMLParsers.phrase(SysMLParsers.diagram)(tokens) match {
       case SysMLParsers.Success(b: Diagram,_) =>
         convert(b).prettyPrint
       case err@ SysMLParsers.NoSuccess(msg,i) =>
-        s"parse error [${source.getName}:${i.pos.line}:${i.pos.column}]: $msg"
+        s"parse error [${source.getName}:${i.pos.line}:${i.pos.column}]: $msg" +
         i.pos.longString
     }
   }
-
   println("diagram = " + fileToJsonString(new File("example.sysml")))
-
 }
