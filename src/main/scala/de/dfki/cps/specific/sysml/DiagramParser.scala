@@ -44,13 +44,15 @@ object DiagramParser extends App {
           case Block(name,compartments,comments) =>
             name -> Map(
               "stereotype" -> "block".toJson,
-              "compartments" -> compartments.collect {
-                case comp if ((comp.compartmentName != "references") && (comp.compartmentName != "operations") || (comp.compartmentName != "constraints"))
+              "compartments" -> compartments.collect {// Hier die Ausnahmen, welche separat geparsed werdenn
+                case comp if (!((comp.compartmentName == "references") || (comp.compartmentName == "operations") || (comp.compartmentName == "constraints")))
                       => comp.compartmentName -> comp.content.map(convert).toJson
-                // Warum nehmen wir alles ausser referenzen
-                case comp if (comp.compartmentName == "operations") => comp.compartmentName -> Map(     // Dieser Case wird leider nicht erreicht
-                 "Operation" -> name.toJson,
-                 "Parameters" -> "ToDo: read parameters".toJson
+                case comp if (comp.compartmentName == "constaints") => comp.compartmentName -> Map(     // operations match name case pre | post OperationsCompartment // Why not reached
+                  "Operation" -> name.toJson,
+                  "Constraints" -> Map(
+                    "def:" -> comp.content.toString(),
+                    "inv:" -> comp.content.companion.toString
+                  ).toJson
                 ).toJson
                 case comp if (comp.compartmentName == "constraints") => comp.compartmentName -> comp.content.map(convert).toJson
               }.toMap.toJson
