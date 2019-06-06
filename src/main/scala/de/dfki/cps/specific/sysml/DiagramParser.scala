@@ -47,14 +47,18 @@ object DiagramParser extends App {
               "compartments" -> compartments.collect {// Hier die Ausnahmen, welche separat geparsed werdenn
                 case comp if (!((comp.compartmentName == "references") || (comp.compartmentName == "operations") || (comp.compartmentName == "constraints")))
                       => comp.compartmentName -> comp.content.map(convert).toJson
-                case comp if (comp.compartmentName == "constaints") => comp.compartmentName -> Map(     // operations match name case pre | post OperationsCompartment // Why not reached
+                case comp if (comp.compartmentName == "constraints") => comp.compartmentName -> Map(     // operations match name case pre | post OperationsCompartment // Why not reached
                   "Operation" -> name.toJson,
                   "Constraints" -> Map(
                     "def:" -> comp.content.toString(),
-                    "inv:" -> comp.content.companion.toString
+                    "inv:" -> comp.content.toString
                   ).toJson
                 ).toJson
-                case comp if (comp.compartmentName == "constraints") => comp.compartmentName -> comp.content.map(convert).toJson
+                case comp if (comp.compartmentName == "operations") => comp.compartmentName -> Map(
+                  "Operation" -> "pass(card: Card)",
+                  "pre" -> comp.content.toString(),
+                  "post" -> comp.content.toString()
+                ).toJson
               }.toMap.toJson
             ).toJson
         }.toMap.toJson,
