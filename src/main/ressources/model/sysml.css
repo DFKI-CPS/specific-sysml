@@ -1,0 +1,105 @@
+/*@namespace url(http://www.w3.org/2000/svg);*/
+
+
+svg>.frame {
+  fill: none;
+}
+
+text {
+  font-family: "Public Sans";    
+}
+
+.block>text.title {
+  font-weight: bold;
+  text-anchor: middle;
+}
+
+.block>text.stereotype {
+  font-size: 80%;
+  font-style: italic;
+  text-anchor: middle;
+}
+
+.compartment>text.title {
+  font-size: 80%;
+  font-style: italic;
+  text-anchor: middle;
+}
+
+.frame {
+  fill: white;
+  stroke: black;
+  stroke-width: 1;
+}
+
+path.connector {
+  stroke: black;
+  fill: none;
+  stroke-dashoffset: 100;
+  stroke-width: 1;
+}
+
+path.connector.realization {
+  stroke-width: 1.5px;
+  stroke-dasharray: 5, 5;
+  marker-end: url(#realizationMarker);
+}
+
+path.connector.aggregation {
+  marker-start: url(#aggregationMarker);
+  marker-end: url(#abstractionMarker);
+}
+
+path.connector.composition {
+  marker-start: url(#compositionMarker);
+  marker-end: url(#abstractionMarker);
+}
+
+#realizationMarker {
+  stroke: black;
+  fill: white;
+  stroke-dasharray: 100%;
+}
+
+#aggregationMarker {
+  stroke: black;
+  fill: white;
+  stroke-dasharray: 100%;
+}
+
+#compositionMarker {
+  stroke: black;
+  fill: black;
+  stroke-dasharray: 100%;
+}
+
+.connector.satisfy {
+  stroke: black;
+  stroke-width: 1.5px;
+  fill: none;
+  marker-end: url(#abstractionMarker);
+}
+
+.connector .label.primary.top {
+  transform: translate(0.5em, -0.9em);
+  text-anchor: start;
+}
+
+.connector .label.primary.bottom {
+  transform: translate(0.5em, 0.9em);
+  text-anchor: start;
+}
+
+.connector .label.primary.right {
+  transform: translate(0.5em, -0.9em);
+  text-anchor: start;
+}
+
+.connector .label.primary.left {
+  transform: translate(-0.5em, -0.9em);
+  text-anchor: end;
+}
+
+.save-button {
+  fill: red;
+}

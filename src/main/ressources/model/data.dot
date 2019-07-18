@@ -1,0 +1,7 @@
+digraph g {
+graph [rankdir = "LR", nodesep=0.1, ranksep=0.3];
+node [fontsize = "16", shape = "record", height=0.1, color=lightblue2];
+edge [];
+1[label=""];
+root->1;
+}
