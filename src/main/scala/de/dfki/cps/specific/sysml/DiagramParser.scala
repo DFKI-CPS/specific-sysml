@@ -6,6 +6,47 @@ import specific.sysml.parser.{IndentScanner, SysMLLexer, SysMLParsers}
 
 import scala.io.Source
 import spray.json._
+import spray.json.DefaultJsonProtocol._
+
+import scala.collection.mutable
+
+/**
+  * This case class is an immediate Representationform of a connection between Blocks. It recieves a syntactically
+  * correct connection. The function semanticaly analyses the connections and remove reverse connections
+  * canEqual is overwritten in such way, that a BlockConnection is equivalent if from from and l_start are swaped with to and l_end
+  *
+  * @param from    Represents from in a Connection
+  * @param to      Represents to in a Connection
+  * @param l_start Represents the Map Label Start in a Connection
+  * @param l_end   Represents the Map Label End in a Connection
+  */
+case class BlockConnection(from: String, to: String, l_start: String, l_end: String, mul_start: Option[Multiplicity], mul_end: Option[Multiplicity]) { // contravariant type bounds
+  def isOpposite(that: BlockConnection) = that match {
+    case BlockConnection(from, to, l_start, l_end, _, _) =>
+      this.from == to && this.to == from && this.l_end == l_start && this.l_start == l_end
+  }
+}
+
+object BlockConnection {
+  /**
+    * Serializer for BlockConnection to JsValue
+    */
+  implicit val blockConnectionJsonFormat = new JsonFormat[BlockConnection] {
+    def read(js: JsValue) = ???
+
+    def write(connection: BlockConnection): JsValue = {
+      JsObject(
+        "from" -> JsString(connection.from),
+        "to" -> JsString(connection.to),
+        "labels" -> Map(
+          "start" -> (connection.l_start + connection.mul_start.fold("")(_.toString)),
+          "end" -> (connection.l_end + connection.mul_end.fold("")(_.toString))
+        ).toJson
+      )
+    }
+  }
+
+}
 
 
 object DiagramParser extends App {
@@ -55,9 +96,11 @@ object DiagramParser extends App {
               }.toMap.toJson
             ).toJson
         }.toMap.toJson,
-        "connectors" -> members.collect { case b: Block => b }.flatMap { from =>
-          val refs = from.compartments.collect { case r: ReferencesCompartment => r }.flatMap(r => r.references)
-          filterConnections(parseNodes(refs, members, from)).toJson // Todo: where are the implicits needed for JsonWriter?
+        "connectors" -> {
+          val refs = members.collect { case b: Block => b }.flatMap { from =>
+            from.compartments.collect { case r: ReferencesCompartment => r }.flatMap(r => r.references.map((from, _)))
+          }
+          filterConnections(parseNodes(refs, members)).toJson
         }
       ).toJson
     case default => default.toString.toJson
@@ -71,30 +114,18 @@ object DiagramParser extends App {
     *
     * @param refs
     * @param members
-    * @param from
     * @return
     */
-  def parseNodes(refs: Seq[Reference], members: Seq[NamedElement], from: Block): Seq[BlockConnection] =
-
-    refs.map(to => { // Todo: map auf fold ohne menge ,erstma alles doppelt und dann set hinzufuegen
+  def parseNodes(refs: Seq[(Block,Reference)], members: Seq[NamedElement]): Seq[BlockConnection] =
+    refs.map{ case (from,to) => {
       val c = {
         to.typeAnnotation.name.parts.mkString("::")
       }
       val opposite = to.oppositeName.flatMap(n => members.collect { case b: Block if b.rawName == c => b }
         .flatMap(_.members.collect { case r: Reference if r.name == n => r }).headOption) // her dopllet?
 
-      val connection = Map(
-        "labels" -> opposite.fold(Map(
-          "end" -> (to.name + to.typeAnnotation.multiplicity.fold("")(_.toString))
-        )) { r =>
-          Map(
-            "start" -> (r.name + r.typeAnnotation.multiplicity.fold("")(_.toString)),
-            "end" -> (to.name + to.typeAnnotation.multiplicity.fold("")(_.toString))
-          )
-        }
-      )
-      BlockConnection(from.rawName, c, "lolstart", "lolnd")
-    })
+      BlockConnection(from.rawName, c, to.oppositeName.getOrElse(from.rawName.toLowerCase), to.name, opposite.flatMap(_.typeAnnotation.multiplicity), to.typeAnnotation.multiplicity)
+  }}
 
   /**
     * Takes an Sequence of BlockConnections with correct Syntax and return it Semantically correct
@@ -106,71 +137,22 @@ object DiagramParser extends App {
     * @param connection Seq[BlockConnection]
     * @return Option[Set[BlockConnection]]
     **/
-  def filterConnections(connection: Seq[BlockConnection]): Option[Seq[BlockConnection]] =
-    try {
-      Some(connection.toSet.toSeq)
-    } catch {
-      case e: Exception => None
-    }
-
-  /**
-    * This case class is an immediate Representationform of a connection between Blocks. It recieves a syntactically
-    * correct connection. The function semanticaly analyses the connections and remove reverse connections
-    * canEqual is overwritten in such way, that a BlockConnection is equivalent if from from and l_start are swaped with to and l_end
-    *
-    * @param from    Represents from in a Connection
-    * @param to      Represents to in a Connection
-    * @param l_start Represents the Map Label Start in a Connection
-    * @param l_end   Represents the Map Label End in a Connection
-    */
-  private case class BlockConnection(from: String, to: String, l_start: String, l_end: String) { // contravariant type bounds
-    def equals[T <: BlockConnection](that: T): Boolean = that match {
-      case BlockConnection(from, to, l_start, l_end) => {
-        val directEquality: Boolean = //passen werte direct übereinander
-          this.from.eq(that.from) && this.to.eq(that.to) && this.l_start.eq(that.l_start) && this.l_end.eq(that.l_end)
-        val reverseQuality: Boolean = //ist 'that' die umgekehrte kante zu 'this'
-          this.from.eq(that.to) && this.to.eq(that.from) && this.l_end.eq(that.l_start) && this.l_start.eq(that.l_end)
-
-        directEquality || reverseQuality
+  def filterConnections(connection: Seq[BlockConnection]): Seq[BlockConnection] = {
+    val buf = mutable.Buffer.empty[BlockConnection]
+    for (c <- connection) {
+      buf.indexWhere(c.isOpposite) match {
+        case -1 => buf.append(c)
+        case n =>
+          val o = buf.remove(n)
+          val r = BlockConnection(c.from, c.to, c.l_start, c.l_end, c.mul_start orElse o.mul_end, c.mul_end orElse o.mul_start)
+          buf.append(r)
       }
-      case _ => false
-
-        super.canEqual(that)
     }
-
-    override def canEqual(a: Any) = a.isInstanceOf[BlockConnection]
-
-  }
-
-  /**
-    * Serializer for BlockConnection to JsValue
-    */
-  implicit val blockConnectionJsonWriter = new JsonWriter[BlockConnection] {
-    def write(connection: BlockConnection): JsValue = {
-      JsObject(
-        "from" -> JsString(connection.from),
-        "to" -> JsString(connection.to),
-        "labels" -> JsString(Map(
-          "start" -> JsString(connection.l_start),
-          "end" -> JsString(connection.l_end)
-        ).toString())
-      )
-    }
+    connection.toSet
+    buf.toSeq
   }
 
 
-  // Maybe, collections need to be explicit?
-  /**
-    * implicit val connectionsJsonWriter = new JsonWriter[Option[Seq[BlockConnection]]] {
-    * def write(connections: Option[Seq[BlockConnection]]) : JsValue = {
-    * val connectionSeq = Seq(
-    * "connections" -> connections
-    * )
-    * JsObject(connections)
-    * }
-    * }
-    *
-    */
 
 
   /**
