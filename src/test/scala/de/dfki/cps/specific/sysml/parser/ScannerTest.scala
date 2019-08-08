@@ -1,12 +1,8 @@
 package specific.sysml.parser
 
-import org.scalatest.{FlatSpec, Matchers}
-
-import scala.util.parsing.input.CharSequenceReader
-
 /**
   * Created by martin on 15.04.16.
-  *
+
 class ScannerTest extends FlatSpec with Matchers {
   val scanner = new Lexer
 
@@ -35,5 +31,4 @@ class ScannerTest extends FlatSpec with Matchers {
       }
     }
   }
-}
-*/
+}*/

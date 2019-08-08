@@ -11,14 +11,15 @@ sealed trait Name extends Positional {
 }
 
 case class SimpleName(name: String) extends Name {
-  override def toString = s"?$name"
+  override def toString = name
   val parts = Seq(name)
 }
 
 case class PathName(parts: Seq[String]) extends Name {
-  override def toString = "?" + parts.mkString("::")
+  override def toString = parts.mkString("::")
 }
 
 case class ResolvedName[T <: NamedElement](element: T) extends Name {
   val parts = Seq(element.name)
+  override def toString = element.name
 }

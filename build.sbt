@@ -14,8 +14,10 @@ resolvers += Resolver.bintrayRepo("dfki-cps", "maven")
 
 libraryDependencies ++= Seq(
   "org.scala-lang.modules" %% "scala-parser-combinators" % "1.0.5",
-  "org.scalatest" %% "scalatest" % "3.0.0+" % "test",
-  "de.dfki.cps" % "specific-dependencies" % "4.6.4"
+  "org.scalatest" %% "scalatest" % "3.0.0+" % "test"
 )
 
 enablePlugins(JavaAppPackaging)
+
+// JSON Library
+libraryDependencies += "io.spray" %%  "spray-json" % "1.3.5"

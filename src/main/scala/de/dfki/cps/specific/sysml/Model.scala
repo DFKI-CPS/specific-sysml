@@ -1,10 +1,10 @@
 package de.dfki.cps.specific.sysml
 
 import de.dfki.cps.specific.sysml.Types.Classifier
+
+import scala.collection.mutable
 import scala.concurrent.duration.Duration
-import scala.util.parsing.input.{Positional}
-
-
+import scala.util.parsing.input.Positional
 
 
 sealed abstract class DiagramKind(abbrev: String) {
@@ -55,7 +55,7 @@ case class Block(rawName: String, compartments: Seq[BlockCompartment], comments:
 }
 
 case class TypeAnnotation(name: Name, multiplicity: Option[Multiplicity]) extends Positional {
-  override def toString = s": $name$multiplicity"
+  override def toString = s": $name${multiplicity.fold("")(_.toString)}"
   def isMany = multiplicity.exists(x => x.upper.isInfinity || x.upper.value > 1)
 }
 
@@ -64,19 +64,23 @@ object TypeAnnotation{
   val Null = TypeAnnotation(ResolvedName(Types.Null), None)
 }
 
-sealed trait ConstraintType
+sealed abstract class ConstraintType(token: String) {
+  override def toString = token
+}
 object ConstraintType {
-  case object Inv extends ConstraintType
-  case object Post extends ConstraintType
-  case object Pre extends ConstraintType
-  case object Body extends ConstraintType
-  case object Init extends ConstraintType
-  case object Derive extends ConstraintType
-  case object Query extends ConstraintType
+  case object Inv extends ConstraintType("inv")
+  case object Post extends ConstraintType("post")
+  case object Pre extends ConstraintType("pre")
+  case object Body extends ConstraintType("body")
+  case object Init extends ConstraintType("init")
+  case object Derive extends ConstraintType("derive")
+  case object Query extends ConstraintType("query")
+  case object Define extends ConstraintType("def")
 }
 
 case class UnprocessedConstraint(tpe: ConstraintType, constraintName: Option[SimpleName], content: String) extends BlockMember {
   def name = "[[constraint]]"
+  override def toString = s"$tpe${constraintName.fold("")(x => s" $x")}: $content"
 }
 
 sealed abstract class BlockCompartment(val compartmentName: String, val content: Seq[BlockMember]) extends Element {
@@ -99,7 +103,9 @@ case class Property(
   name: String,
   typeAnnotation: TypeAnnotation,
   properties: Seq[AttributeProperty],
-  constraints: Seq[UnprocessedConstraint]) extends BlockMember
+  constraints: Seq[UnprocessedConstraint]) extends BlockMember {
+  override def toString = s"$name$typeAnnotation"
+}
 
 case class Reference(
     name: String,
@@ -118,14 +124,14 @@ case class Operation(
     parameters: Seq[Parameter],
     properties: Seq[OperationProperty],
     constraints: Seq[UnprocessedConstraint]) extends BlockMember {
-  override def toString: String = s"<<operation>> $name(${parameters.mkString})$typeAnnotation"
+  override def toString: String = s"$name(${parameters.mkString})$typeAnnotation"
 }
 
 case class Parameter(
   name: String,
   typeAnnotation: TypeAnnotation,
   properties: Seq[TypedElementProperty]) extends Element {
-  override def toString = s"<<param>> $name$typeAnnotation"
+  override def toString = s"$name$typeAnnotation"
 }
 
 sealed trait FlowDirection
